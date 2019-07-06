@@ -1,8 +1,8 @@
 import gym
-import random
-import string
-import logging
-import math
+import random, string, logging, math
+import pygame
+import pygame.gfxdraw
+from pygame.locals import *
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,13 @@ class Constants:
     ENTITY_ID_LENGTH = 16
     ENTITY_RANGE_VISION = 2200
 
-    # GHOSTS Constants
     GHOST_NUMBER = 9
+    BUSTER_NUMBER_PER_TEAM = 3
+
+    # TYPE
+    TYPE_GHOST = -1
+    TYPE_BUSTER_TEAM_0 = 0
+    TYPE_BUSTER_TEAM_1 = 1
 
 
 class MathUtility:
@@ -56,13 +61,21 @@ class Map:
         self.height = height
 
 
-class Entity:
+class Entity(pygame.sprite.Sprite):
     """
     Class that will handle any entity
     """
 
-    def __init__(self):
+    def __init__(self, type_entity):
+        """
+        Constructor
+        """
+        pygame.sprite.Sprite.__init__(self)
+
         self.id = self._generate_id(Constants.ENTITY_ID_LENGTH)
+        self.x = Constants.MAP_WIDTH / 2
+        self.y = Constants.MAP_HEIGHT / 2
+        self.type = type_entity
 
     def is_in_team_0_base(self):
         """
@@ -97,14 +110,16 @@ class Ghost(Entity):
     Class that will handle the ghost entity
     """
 
-    def __init__(self):
-        Entity.__init__(self)
+    def __init__(self, type_entity):
+        """
+        Constructor
+        """
+        super(Ghost, self).__init__(type_entity)
         self._generate_ghost_position()
 
     def _generate_ghost_position(self):
         """
         Function that generate a random position for the ghost
-        :return: a tuple (x, y) randomly generated
         """
         generated = False
         while not generated:
@@ -112,6 +127,32 @@ class Ghost(Entity):
             self.y = random.randint(0, Constants.MAP_HEIGHT)
             if not(self.is_in_team_0_base() or self.is_in_team_1_base()):
                 generated = True
+
+
+class Buster(Entity):
+    """
+    Class that will handle busters
+    """
+
+    def __init__(self, type_entity):
+        """
+        Constructor
+        """
+        super(Buster, self).__init__(type_entity)
+        self._generate_buster_position()
+
+    def _generate_buster_position(self):
+        """
+        Function that handle the initial position for busters
+        """
+        if self.type == Constants.TYPE_BUSTER_TEAM_0:
+            self.x = 0
+            self.y = 0
+        elif self.type == Constants.TYPE_BUSTER_TEAM_1:
+            self.x = Constants.MAP_WIDTH
+            self.y = Constants.MAP_HEIGHT
+        else:
+            raise Exception("Entity neither in team 0 or team 1")
 
 
 class Game:
@@ -124,10 +165,29 @@ class Game:
         Constructor
         """
         self.map = Map(Constants.MAP_WIDTH, Constants.MAP_HEIGHT)
-        self.ghosts = self._generate_ghosts(Constants.GHOST_NUMBER)
+        self._generate_ghosts(Constants.GHOST_NUMBER)
+        self._generate_busters(Constants.BUSTER_NUMBER_PER_TEAM)
+
+    def _generate_busters(self, buster_number):
+        """
+        Function that will generate all busters
+        :param buster_number: the number of buster in each team
+        """
+        self.busters = []
+        for i in range(buster_number):
+            self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_0))
+
+        for i in range(buster_number):
+            self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_1))
 
     def _generate_ghosts(self, ghost_number):
-        return 1
+        """
+        Function that will generate all ghosts
+        :param ghost_number: the number of ghosts to generate
+        """
+        self.ghosts = []
+        for i in range(ghost_number):
+            self.ghosts.append(Ghost(Constants.TYPE_GHOST))
 
 
 class BusterEnv(gym.Env):
@@ -147,3 +207,8 @@ class BusterEnv(gym.Env):
 
     def render(self, mode='human', close=False):
         pass
+
+
+if __name__ == '__main__':
+    game = Game()
+
