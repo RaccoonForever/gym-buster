@@ -157,7 +157,7 @@ class Ghost(Entity):
         self.image = pygame.transform.rotate(
             Ghost.create_image(Constants.PYGAME_GHOST_RADIUS, Constants.PYGAME_GHOST_COLOR), self.angle)
         self.rect = self.image.get_rect()
-        self.rect.topleft = self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS, self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS
+        self.rect.topleft = self.convert_position_to_pygame()
         print("Ghost : " + self.id + ", position : " + str(self.x) + " " + str(self.y) + ", rect : " + str(
             self.rect) + ", image : " + str(self.image))
 
@@ -179,9 +179,18 @@ class Ghost(Entity):
         """
         surface.blit(self.image, self.rect)
 
+    def convert_position_to_pygame(self):
+        """
+        Function that will convert x,y position of the entity to pygame pixel
+        :return: a tuple of converted coordinates
+        """
+
+        return (self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS,
+                self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS)
+
     @staticmethod
     def create_image(size, color):
-        image = pygame.Surface((size, size))
+        image = pygame.Surface((size*2, size*2))
         image = image.convert_alpha()
         image.fill((0, 0, 0, 0))
         pygame.draw.circle(image, color, (round((size - 1) / 2), round((size - 1) / 2)), round(size / 2))
@@ -225,7 +234,7 @@ class Buster(Entity):
         self.image = pygame.transform.rotate(
             Buster.create_image(Constants.PYGAME_BUSTER_LENGTH, color), self.angle)
         self.rect = self.image.get_rect()
-        self.rect.topleft = self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_BUSTER_LENGTH, self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_BUSTER_LENGTH
+        self.rect.topleft = self.convert_position_to_pygame()
         print("Buster : " + self.id + ", position : " + str(self.x) + " " + str(self.y) + ", rect : " + str(
             self.rect) + ", image : " + str(self.image))
 
@@ -234,11 +243,11 @@ class Buster(Entity):
         Function that handle the initial position for busters
         """
         if self.type == Constants.TYPE_BUSTER_TEAM_0:
-            self.x = 0
-            self.y = 0
+            self.x = 50
+            self.y = 50
         elif self.type == Constants.TYPE_BUSTER_TEAM_1:
-            self.x = Constants.MAP_WIDTH
-            self.y = Constants.MAP_HEIGHT
+            self.x = Constants.MAP_WIDTH - 50
+            self.y = Constants.MAP_HEIGHT - 50
         else:
             raise Exception("Entity neither in team 0 or team 1")
 
@@ -248,6 +257,15 @@ class Buster(Entity):
         :param surface: the surface where to render the buster image
         """
         surface.blit(self.image, self.rect)
+
+    def convert_position_to_pygame(self):
+        """
+        Function that will convert x,y position of the entity to pygame pixel
+        :return: a tuple of converted coordinates
+        """
+
+        return (self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_BUSTER_LENGTH/2,
+                self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_BUSTER_LENGTH/2)
 
     @staticmethod
     def create_image(size, color):
