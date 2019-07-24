@@ -67,5 +67,19 @@ class TestMathUtility(unittest.TestCase):
         x1, y1 = 50, 50
         x2, y2 = 100, 100
         result_x, result_y = MathUtility.opposite_direction(x1, y1, x2, y2, length)
-        self.assertTrue(result_x - (70.7107 - length) < self.EPSILON,
+        self.assertTrue(result_x - 14.6447 < self.EPSILON,
                         msg="Opposite direction with first point 50,50 and second 100,100 and length 50")
+        self.assertTrue(result_y - 14.6447 < self.EPSILON,
+                        msg="Opposite direction with first point 50,50 and second 100,100 and length 50")
+        x2, y2 = 50, 100
+        result_x, result_y = MathUtility.opposite_direction(x1, y1, x2, y2, length)
+        self.assertTrue(result_x - 50 < self.EPSILON,
+                        msg="Opposite direction with first point 50,50 and second 50,100 and length 50")
+        self.assertTrue(result_y - 14.6447 < self.EPSILON,
+                        msg="Opposite direction with first point 50,50 and second 50,100 and length 50")
+        x2, y2 = 0, 0
+        result_x, result_y = MathUtility.opposite_direction(x1, y1, x2, y2, length)
+        self.assertTrue(result_x - 85.355 < self.EPSILON,
+                        msg="Opposite direction with first point 50,50 and second 0,0 and length 50")
+        self.assertTrue(result_y - 85.355 < self.EPSILON,
+                        msg="Opposite direction with first point 50,50 and second 0,0 and length 50")
