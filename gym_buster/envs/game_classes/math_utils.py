@@ -41,23 +41,23 @@ class MathUtility:
             return MathUtility.limit_coordinates(x1 + new_x * length, y1 + new_y * length)
 
     @staticmethod
-    def distance_from_base_0(ghost):
+    def distance_from_base_0(entity):
         """
-        Function that tells if the ghost is in the base 0
-        :param ghost: the ghost to check
+        Function that tells if an entity is in the base 0
+        :param entity: the entity to check
         :return: a boolean true or false
         """
-        return MathUtility.distance(0, 0, ghost.x, ghost.y) < Constants.BASE_RANGE_GHOST_VALIDATED
+        return MathUtility.distance(0, 0, entity.x, entity.y) < Constants.BASE_RANGE_GHOST_VALIDATED
 
     @staticmethod
-    def distance_from_base_1(ghost):
+    def distance_from_base_1(entity):
         """
-        Function that tells if the ghost is in the base 1
-        :param ghost: the ghost to check
+        Function that tells if an entity is in the base 1
+        :param entity: the entity to check
         :return: a boolean true or false
         """
-        return MathUtility.distance(Constants.MAP_WIDTH, Constants.MAP_HEIGHT, ghost.x,
-                                    ghost.y) < Constants.BASE_RANGE_GHOST_VALIDATED
+        return MathUtility.distance(Constants.MAP_WIDTH, Constants.MAP_HEIGHT, entity.x,
+                                    entity.y) < Constants.BASE_RANGE_GHOST_VALIDATED
 
     @staticmethod
     def limit_coordinates(x1, y1):
