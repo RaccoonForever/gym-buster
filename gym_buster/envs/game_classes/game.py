@@ -210,11 +210,11 @@ class Game:
         remove_ghosts = []
         # Ghost released in a base
         for ghost in self.ghosts:
-            if MathUtility.distance_from_base_0(ghost):
+            if ghost.is_in_team_0_base():
                 self.score_team_0 += 1
                 ghost.alive = False
                 remove_ghosts.append(ghost)
-            elif MathUtility.distance_from_base_1(ghost):
+            elif ghost.is_in_team_1_base():
                 self.score_team_1 += 1
                 ghost.alive = False
                 remove_ghosts.append(ghost)

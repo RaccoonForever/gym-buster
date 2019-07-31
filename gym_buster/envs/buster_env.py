@@ -153,7 +153,7 @@ class BusterEnv(gym.Env):
                 result[i] = "RELEASE"
             elif actions[i * 4 + 2] > 0.8:
                 # Bust the closest ghost
-                ghost = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
+                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
                 if ghost:
                     result[i] = "BUST " + str(ghost.id)
                 else:
@@ -177,12 +177,14 @@ class BusterEnv(gym.Env):
             # state (carrying or not)
             observation[i * 5 + 2] = self.state['team0'][i].state
             # distance from closest ghost observable
-            observation[i * 5 + 3] = self.state['team0'][i].get_closest_distance(self.state['ghostvisibleteam0'])
+            _, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
+            observation[i * 5 + 3] = dist
             # number of ghost in range
             observation[i * 5 + 4] = self.state['team0'][i].get_number_entities_in_range(
                 self.state['ghostvisibleteam0'])
             # distance from closest ennemy
-            observation[i * 5 + 5] = self.state['team0'][i].get_closest_distance(self.state['ennemyvisibleteam0'])
+            _, dist = self.state['team0'][i].get_closest(self.state['ennemyvisibleteam0'])
+            observation[i * 5 + 5] = dist
             # number of ennemy in range
             observation[i * 5 + 6] = self.state['team0'][i].get_number_entities_in_range(
                 self.state['ennemyvisibleteam0'])
