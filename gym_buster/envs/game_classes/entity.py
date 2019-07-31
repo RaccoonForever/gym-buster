@@ -51,8 +51,8 @@ class Entity:
         if MathUtility.distance(self.x, self.y, x, y) <= Constants.BUSTER_MAX_MOVE:
             return x, y
         else:
-            return int(self.x + Constants.BUSTER_MAX_MOVE * cos(
-                radians(self.angle))), self.y - int(Constants.BUSTER_MAX_MOVE * sin(radians(self.angle)))
+            return MathUtility.limit_coordinates(int(self.x + Constants.BUSTER_MAX_MOVE * cos(
+                radians(self.angle))), self.y - int(Constants.BUSTER_MAX_MOVE * sin(radians(self.angle))))
 
     def move(self, x, y):
         """
