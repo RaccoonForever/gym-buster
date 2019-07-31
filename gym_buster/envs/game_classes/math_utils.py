@@ -45,7 +45,7 @@ class MathUtility:
         """
         Function that tells if the ghost is in the base 0
         :param ghost: the ghost to check
-        :return: a boolean true or false
+        :return: a boolean true or false #TODO mettre cette fonction dans entity
         """
         return MathUtility.distance(0, 0, ghost.x, ghost.y) < Constants.BASE_RANGE_GHOST_VALIDATED
 
