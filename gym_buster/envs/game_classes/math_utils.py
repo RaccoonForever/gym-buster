@@ -41,25 +41,6 @@ class MathUtility:
             return MathUtility.limit_coordinates(x1 + new_x * length, y1 + new_y * length)
 
     @staticmethod
-    def distance_from_base_0(entity):
-        """
-        Function that tells if an entity is in the base 0
-        :param entity: the entity to check #TODO mettre cette fonction dans entity
-        :return: a boolean true or false
-        """
-        return MathUtility.distance(0, 0, entity.x, entity.y) < Constants.BASE_RANGE_GHOST_VALIDATED
-
-    @staticmethod
-    def distance_from_base_1(entity):
-        """
-        Function that tells if an entity is in the base 1
-        :param entity: the entity to check
-        :return: a boolean true or false
-        """
-        return MathUtility.distance(Constants.MAP_WIDTH, Constants.MAP_HEIGHT, entity.x,
-                                    entity.y) < Constants.BASE_RANGE_GHOST_VALIDATED
-
-    @staticmethod
     def limit_coordinates(x1, y1):
         """
         Function that will return the coordinates to stay on the map

@@ -1,4 +1,5 @@
 import unittest
+import math
 
 from gym_buster.envs.game_classes.math_utils import MathUtility
 
@@ -83,3 +84,14 @@ class TestMathUtility(unittest.TestCase):
                         msg="Opposite direction with first point 50,50 and second 0,0 and length 50")
         self.assertTrue(result_y - 85.355 < self.EPSILON,
                         msg="Opposite direction with first point 50,50 and second 0,0 and length 50")
+
+    def test_angle(self):
+
+        x1, y1 = 0, 0
+        x2, y2 = 10, 0
+        result = math.atan2(y2 - y1, x2 - x1)
+        self.assertTrue(result == 0.0)
+
+        x2, y2 = 0, 10
+        result = math.degrees(math.atan2(-(y2 - y1), x2 - x1))
+        self.assertTrue(result == -90.0)
