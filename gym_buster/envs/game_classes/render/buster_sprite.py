@@ -14,6 +14,7 @@ class BusterSprite(Buster):
     """
     super(BusterSprite, self).__init__(type_entity)
     self._create_image()
+    print("Image : " + str(self.image))
   
   def _create_image(self):
     """
@@ -29,16 +30,13 @@ class BusterSprite(Buster):
                        (round(Constants.PYGAME_BUSTER_RADIUS), round(Constants.PYGAME_BUSTER_RADIUS)),
                        Constants.PYGAME_BUSTER_RADIUS)
     self.image = image
-  
-    print("Image : " + str(self.image))
     
   def _convert_position_to_pygame(self):
     """
     Function that will convert x,y position of the entity to pygame pixel
     :return: a tuple of converted coordinates
     """
-    return (self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_BUSTER_RADIUS,
-self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_BUSTER_RADIUS)
+    super(GhostSprite, self)._convert_position_to_pygame(Constants.PYGAME_BUSTER_RADIUS)
     
   def draw(self, surface):
     """
