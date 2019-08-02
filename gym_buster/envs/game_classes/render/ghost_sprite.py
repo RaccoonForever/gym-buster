@@ -2,8 +2,9 @@ import pygame
 
 from gym_buster.envs.game_classes.ghost import Ghost
 from gym_buster.envs.game_classes.constants import Constants
+from gym_buster.envs.game_classes.render.sprite import Sprite
 
-class GhostSprite(Ghost):
+class GhostSprite(Ghost, Sprite):
   """
   Class that will handle everything about ghost rendering
   """
@@ -28,22 +29,20 @@ class GhostSprite(Ghost):
                        Constants.PYGAME_GHOST_RADIUS)
     self.image = image
   
-  def convert_position_to_pygame(self):
+  def _convert_position_to_pygame(self):
     """
     Function that will convert x,y position of the entity to pygame pixel
     :return: a tuple of converted coordinates
     """
-    return (round(self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS),
-round(self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS))
+    super(GhostSprite, self)._convert_position_to_pygame(Constants.PYGAME_GHOST_RADIUS)
   
   def draw(self, surface):
     """
     Draw the buster on the surface
     :param surface: the surface where to render the buster image
     """
-    if self.alive:
-        surface.blit(self.image, self._convert_position_to_pygame())
-    else:
+    if not self.alive:
         self.image = pygame.Surface((1, 1)).convert_alpha()
         self.image.fill((0, 0, 0, 0))
+        
     surface.blit(self.image, self._convert_position_to_pygame())
