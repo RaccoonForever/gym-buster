@@ -22,7 +22,7 @@ class Aibehaviour:
         busters_already_treated = dict(zip(busters, [None, None, None]))
         ghosts_already_treated = []
         commands = []
-        if len(busters) == 3:
+        if 1 <= len(busters) <= 3:
             for buster in busters:
                 # If a buster is carrying a ghost then go back to base or release if in distance
                 if buster.state == Constants.STATE_BUSTER_CARRYING and busters_already_treated[buster] is None:
@@ -31,7 +31,7 @@ class Aibehaviour:
                     if buster.is_in_team_base():
                         busters_already_treated[buster] = "RELEASE"
                     else:
-                        busters_already_treated[buster] = "MOVE 1000 1000"
+                        busters_already_treated[buster] = "MOVE 15000 8000"
                     continue
 
                 # If a busters can see a ghost then go on it (only one)

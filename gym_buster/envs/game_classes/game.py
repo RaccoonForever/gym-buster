@@ -1,6 +1,8 @@
 import pygame
 import sys
 
+from gym_buster.envs.game_classes.render.ghost_sprite import GhostSprite
+from gym_buster.envs.game_classes.render.buster_sprite import BusterSprite
 from .constants import Constants
 from .map import Map
 from .ghost import Ghost
@@ -26,8 +28,8 @@ class Game:
         self.window_height = Constants.PYGAME_WINDOW_HEIGHT
         self.window_width = Constants.PYGAME_WINDOW_WIDTH
         self._init_screen()
-        self._generate_ghosts(Constants.GHOST_NUMBER)
-        self._generate_busters(Constants.BUSTER_NUMBER_PER_TEAM)
+        self._generate_ghosts(self.ghost_number)
+        self._generate_busters(self.buster_number)
         self.board = Map(Constants.MAP_WIDTH, Constants.MAP_HEIGHT)
         self.speed = Constants.PYGAME_SPEED
         self.running = True
@@ -94,10 +96,10 @@ class Game:
         """
         self.busters = []
         for i in range(buster_number):
-            self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_0))
+            self.busters.append(BusterSprite(Constants.TYPE_BUSTER_TEAM_0))
 
         for i in range(buster_number):
-            self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_1))
+            self.busters.append(BusterSprite(Constants.TYPE_BUSTER_TEAM_1))
 
     def _generate_ghosts(self, ghost_number):
         """
@@ -106,7 +108,7 @@ class Game:
         """
         self.ghosts = []
         for i in range(ghost_number):
-            self.ghosts.append(Ghost(Constants.TYPE_GHOST))
+            self.ghosts.append(GhostSprite())
 
     def loop(self):
         """
@@ -210,20 +212,19 @@ class Game:
         remove_ghosts = []
         # Ghost released in a base
         for ghost in self.ghosts:
-            if ghost.is_in_team_0_base():
+            if ghost.is_in_team_0_base() and not ghost.captured:
                 self.score_team_0 += 1
-                ghost.alive = False
+                ghost.kill()
                 remove_ghosts.append(ghost)
-            elif ghost.is_in_team_1_base():
+            elif ghost.is_in_team_1_base() and not ghost.captured:
                 self.score_team_1 += 1
-                ghost.alive = False
+                ghost.kill()
                 remove_ghosts.append(ghost)
             ghost.value = Constants.VALUE_GHOST_BASIC
 
         # Remove ghosts not available anymore
         for ghost in remove_ghosts:
             self.ghosts.remove(ghost)
-            Ghost._remove_ghost(ghost)
 
         # Execute for each buster his tasks
         for i in range(1, self.buster_number + 1):
@@ -234,9 +235,11 @@ class Game:
             command_0 = commands_team_0[i - 1]
             command_1 = commands_team_1[i - 1]
 
-            print("Buster team 0 | id : " + str(buster_team_0.id) + " | Command : " + command_0)
+            print("Buster team 0 | id : " + str(buster_team_0.id) + " | X : " + str(buster_team_0.x) + ", Y : " + str(
+                buster_team_0.y) + "Command : " + command_0)
             self.score_team_0 += buster_team_0.buster_command(command_0)
-            print("Buster team 1 | id : " + str(buster_team_1.id) + " | Command : " + command_1)
+            print("Buster team 1 | id : " + str(buster_team_1.id) + " | X : " + str(buster_team_1.x) + ", Y : " + str(
+                buster_team_1.y) + "Command : " + command_1)
             self.score_team_1 += buster_team_1.buster_command(command_1)
 
         for ghost in self.ghosts:
@@ -277,12 +280,17 @@ class Game:
                             dist = new_dist
                             closest = buster
 
-                # Reset all busters with this ghost id except
+                # Reset all busters with this ghost id except closest
                 if closest:
                     if closest.type == Constants.TYPE_BUSTER_TEAM_0:
                         self.score_team_0 += 1
+
                     if closest.type == Constants.TYPE_BUSTER_TEAM_1:
                         self.score_team_1 += 1
+
+                    ghost.being_captured(closest)
+                    closest.capturing_ghost()
+
                     for buster in nb_buster_team_0_busting_this_ghost + nb_buster_team_1_busting_this_ghost:
                         if buster != closest:
                             buster.value = Constants.VALUE_BUSTER_NOTHING
@@ -291,7 +299,7 @@ class Game:
             else:
                 ghost.captured = False
 
-        # make ghost run away
+        # make ghost run away for those who are not being busted
         for ghost in self.ghosts:
             ghost.run_away(self.busters)
 

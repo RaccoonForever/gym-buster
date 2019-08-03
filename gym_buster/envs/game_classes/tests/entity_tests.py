@@ -89,6 +89,13 @@ class EntityTest(unittest.TestCase):
         self.assertTrue((res_x <= 1284 + self.EPSILON) and (res_x >= 1284 - self.EPSILON))
         self.assertTrue((res_y <= 1643 + self.EPSILON) and (res_y >= 1643 - self.EPSILON))
 
+        self.entity.x = 15950
+        self.entity.y = 8950
+
+        res_x, res_y = self.entity._compute_max_move(13400, 6200)
+        self.assertTrue((res_x <= 15406 + self.EPSILON) and (res_x >= 15406 - self.EPSILON))
+        self.assertTrue((res_y <= 8364 + self.EPSILON) and (res_y >= 8364 - self.EPSILON))
+
     def test_get_closest(self):
         self.entity.x = 8000
         self.entity.y = 4500

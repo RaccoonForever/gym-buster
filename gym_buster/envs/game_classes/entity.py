@@ -19,7 +19,7 @@ class Entity:
         self.x = Constants.MAP_WIDTH / 2
         self.y = Constants.MAP_HEIGHT / 2
         self.type = type_entity
-        self.angle = random.randint(0, 360)
+        self.angle = 0
         self.direction = 0
         self.size = 10
         self.state = Constants.STATE_BUSTER_NOTHING
@@ -46,10 +46,10 @@ class Entity:
         :param y: the y coordinate wanted
         :return: the tuple (x', y') of maximum coordinate if the original move is going to far
         """
-        self.angle = degrees(atan2(-(y - self.y), x - self.y))
+        self.angle = degrees(atan2(-(y - self.y), x - self.x))
 
         if MathUtility.distance(self.x, self.y, x, y) <= Constants.BUSTER_MAX_MOVE:
-            return x, y
+            return MathUtility.limit_coordinates(x, y)
         else:
             return MathUtility.limit_coordinates(int(self.x + Constants.BUSTER_MAX_MOVE * cos(
                 radians(self.angle))), self.y - int(Constants.BUSTER_MAX_MOVE * sin(radians(self.angle))))
@@ -93,6 +93,14 @@ class Entity:
                 result += 1
 
         return result
+
+    def convert_position_to_pygame(self, radius):
+        """
+        Function that will convert x,y position of the entity to pygame pixel
+        :return: a tuple of converted coordinates
+        """
+        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - radius),
+                round(self.y * Constants.PYGAME_RATIO_HEIGHT - radius))
 
     @staticmethod
     def get_entities_visible(entities, targets):

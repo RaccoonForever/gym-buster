@@ -95,3 +95,8 @@ class TestMathUtility(unittest.TestCase):
         x2, y2 = 0, 10
         result = math.degrees(math.atan2(-(y2 - y1), x2 - x1))
         self.assertTrue(result == -90.0)
+
+        x1, y1 = 15950, 8950
+        x2, y2 = 13400, 6200
+        result = math.degrees(math.atan2(-(y2 - y1), x2 - x1))
+        self.assertTrue(True)

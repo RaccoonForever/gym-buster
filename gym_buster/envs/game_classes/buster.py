@@ -1,5 +1,5 @@
-import pygame
 import re
+import copy
 
 from .entity import Entity
 from .constants import Constants
@@ -23,25 +23,8 @@ class Buster(Entity):
         super(Buster, self).__init__(type_entity)
         self.value = Constants.VALUE_BUSTER_NOTHING
         self._generate_buster_position()
-        self.create_image()
         print(
-            "Buster : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y) + ", image : " + str(
-                self.image))
-
-    def _generate_buster_position(self):
-        """
-        Function that handle the initial position for busters
-        """
-        if self.type == Constants.TYPE_BUSTER_TEAM_0:
-            self.x = 50
-            self.y = 50
-            self.id = self._generate_id(Constants.TYPE_BUSTER_TEAM_0, self)
-        elif self.type == Constants.TYPE_BUSTER_TEAM_1:
-            self.x = Constants.MAP_WIDTH - 50
-            self.y = Constants.MAP_HEIGHT - 50
-            self.id = self._generate_id(Constants.TYPE_BUSTER_TEAM_1, self)
-        else:
-            raise Exception("Entity neither in team 0 or team 1")
+            "Buster : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y))
 
     @classmethod
     def _generate_id(cls, team, obj):
@@ -51,12 +34,12 @@ class Buster(Entity):
         :return: the id
         """
         if team == Constants.TYPE_BUSTER_TEAM_0:
-            ids = cls.entity_type_0_id
+            ids = copy.copy(cls.entity_type_0_id)
             cls.entity_type_0_id += 1
             cls.busters_0.append(obj)
             return ids
         elif team == Constants.TYPE_BUSTER_TEAM_1:
-            ids = cls.entity_type_1_id
+            ids = copy.copy(cls.entity_type_1_id)
             cls.entity_type_1_id += 1
             cls.busters_1.append(obj)
             return ids
@@ -71,48 +54,6 @@ class Buster(Entity):
         cls.entity_type_1_id = 1
         cls.entity_type_0_id = 1
 
-    def is_in_team_base(self):
-        """
-        Function that gives us true if the buster is in team base
-        :return: true or false
-        """
-        if self.type == Constants.TYPE_BUSTER_TEAM_0:
-            return self.is_in_team_0_base()
-        elif self.type == Constants.TYPE_BUSTER_TEAM_1:
-            return self.is_in_team_1_base()
-
-    def draw(self, surface):
-        """
-        Draw the buster on the surface
-        :param surface: the surface where to render the buster image
-        """
-        surface.blit(self.image, self.convert_position_to_pygame())
-
-    def convert_position_to_pygame(self):
-        """
-        Function that will convert x,y position of the entity to pygame pixel
-        :return: a tuple of converted coordinates
-        """
-
-        return (self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_BUSTER_RADIUS,
-                self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_BUSTER_RADIUS)
-
-    def create_image(self):
-        """
-        Create the first image of the buster
-        :param color: the color
-        """
-        image = pygame.Surface((Constants.PYGAME_BUSTER_RADIUS * 2, Constants.PYGAME_BUSTER_RADIUS * 2)).convert_alpha()
-        image.fill((0, 0, 0, 0))
-        if self.type == Constants.TYPE_BUSTER_TEAM_0:
-            self.color = Constants.PYGAME_BUSTER_TEAM_0_COLOR
-        else:
-            self.color = Constants.PYGAME_BUSTER_TEAM_1_COLOR
-        pygame.draw.circle(image, self.color,
-                           (round(Constants.PYGAME_BUSTER_RADIUS), round(Constants.PYGAME_BUSTER_RADIUS)),
-                           Constants.PYGAME_BUSTER_RADIUS)
-        self.image = image
-
     @staticmethod
     def get_buster(busters, number, team):
         """
@@ -125,6 +66,32 @@ class Buster(Entity):
         for buster in busters:
             if buster.id == number and buster.type == team:
                 return buster
+        return None
+
+    def _generate_buster_position(self):
+        """
+        Function that handle the initial position for busters
+        """
+        if self.type == Constants.TYPE_BUSTER_TEAM_0:
+            self.x = 50
+            self.y = 50
+            self.id = self._generate_id(Constants.TYPE_BUSTER_TEAM_0, self)
+        elif self.type == Constants.TYPE_BUSTER_TEAM_1:
+            self.x = Constants.MAP_WIDTH - 50
+            self.y = Constants.MAP_HEIGHT - 50
+            self.id = self._generate_id(Constants.TYPE_BUSTER_TEAM_1, self)
+        else:
+            raise ValueError("Entity neither in team 0 or team 1")
+
+    def is_in_team_base(self):
+        """
+        Function that gives us true if the buster is in team base
+        :return: true or false
+        """
+        if self.type == Constants.TYPE_BUSTER_TEAM_0:
+            return self.is_in_team_0_base()
+        elif self.type == Constants.TYPE_BUSTER_TEAM_1:
+            return self.is_in_team_1_base()
 
     def can_bust(self, ghost):
         """
@@ -132,8 +99,8 @@ class Buster(Entity):
         :param ghost: the ghost to bust
         :return: true or false
         """
-        return MathUtility.distance(ghost.x, ghost.y, self.x, self.y) <= Constants.BUSTER_BUST_MAX_RANGE \
-               and MathUtility.distance(ghost.x, ghost.y, self.x, self.y) >= Constants.BUSTER_BUST_MIN_RANGE
+        distance = MathUtility.distance(ghost.x, ghost.y, self.x, self.y)
+        return Constants.BUSTER_BUST_MIN_RANGE <= distance <= Constants.BUSTER_BUST_MAX_RANGE
 
     def buster_command(self, command):
         """
@@ -177,14 +144,21 @@ class Buster(Entity):
             self.value = Constants.VALUE_BUSTER_NOTHING
             self.state = Constants.STATE_BUSTER_NOTHING
 
+            print(str(self.id) + " releasing " + str(self.value))
+
     def bust(self, ids):
         """
         Execute the action to catch a ghost with id ids
         :param ids: the ghost to catch
         """
         ghost = Ghost.get_ghost(ids)
-        if self.state == Constants.STATE_BUSTER_NOTHING and MathUtility.distance(ghost.x, ghost.y, self.x,
-                                                                                 self.y) <= Constants.BUSTER_BUST_MAX_RANGE and MathUtility.distance(
-            ghost.x, ghost.y, self.x, self.y) >= Constants.BUSTER_BUST_MIN_RANGE:
+        if self.state == Constants.STATE_BUSTER_NOTHING and self.can_bust(ghost):
             ghost.value += 1
             self.value = ids
+
+    def capturing_ghost(self):
+        """
+        Function that will change the state of the buster
+        :param ghost: the captured ghost
+        """
+        self.state = Constants.STATE_BUSTER_CARRYING

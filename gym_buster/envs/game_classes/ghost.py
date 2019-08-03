@@ -1,5 +1,5 @@
 import random
-import pygame
+import copy
 
 from .entity import Entity
 from .constants import Constants
@@ -14,31 +14,18 @@ class Ghost(Entity):
     ghost_id = 1
     ghosts = []
 
-    def __init__(self, type_entity):
+    def __init__(self):
         """
         Constructor
         """
-        super(Ghost, self).__init__(type_entity)
+        super(Ghost, self).__init__(Constants.TYPE_GHOST)
         self.value = Constants.VALUE_GHOST_BASIC
         self.id = self._generate_id()
         self._add_ghost(self)
         self._generate_random_ghost_position()
-        self.create_image(Constants.PYGAME_GHOST_COLOR)
         self.alive = True
         self.captured = False
-        print("Ghost : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y) + ", image : " + str(
-            self.image))
-
-    def _generate_random_ghost_position(self):
-        """
-        Function that generate a random position for the ghost
-        """
-        generated = False
-        while not generated:
-            self.x = random.randint(0, Constants.MAP_WIDTH)
-            self.y = random.randint(0, Constants.MAP_HEIGHT)
-            if not (self.is_in_team_0_base() or self.is_in_team_1_base()):
-                generated = True
+        print("Ghost : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y))
 
     @classmethod
     def _generate_id(cls):
@@ -46,7 +33,7 @@ class Ghost(Entity):
         Generate ghosts id
         :return: the ghost id
         """
-        ids = cls.ghost_id
+        ids = copy.copy(cls.ghost_id)
         cls.ghost_id += 1
         return ids
 
@@ -74,38 +61,28 @@ class Ghost(Entity):
         cls.ghosts = []
         cls.ghost_id = 1
 
-    def draw(self, surface):
+    @classmethod
+    def get_ghost(cls, ids):
         """
-        Draw the buster on the surface
-        :param surface: the surface where to render the buster image
+        Return the ghost with the id
+        :param ids: the ghost to return
+        :return: a ghost
         """
-        if self.alive:
-            surface.blit(self.image, self.convert_position_to_pygame())
-        else:
-            self.image = pygame.Surface((1, 1)).convert_alpha()
-            self.image.fill((0, 0, 0, 0))
-            surface.blit(self.image, self.convert_position_to_pygame())
+        for ghost in cls.ghosts:
+            if ghost.id == ids:
+                return ghost
+        return None
 
-    def convert_position_to_pygame(self):
+    def _generate_random_ghost_position(self):
         """
-        Function that will convert x,y position of the entity to pygame pixel
-        :return: a tuple of converted coordinates
+        Function that generate a random position for the ghost
         """
-
-        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS),
-                round(self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS))
-
-    def create_image(self, color):
-        """
-        Create the first image of the ghost
-        :param color: the color of the ghost
-        """
-        image = pygame.Surface((Constants.PYGAME_GHOST_RADIUS * 2, Constants.PYGAME_GHOST_RADIUS * 2)).convert_alpha()
-        image.fill((0, 0, 0, 0))
-        pygame.draw.circle(image, color,
-                           (round(Constants.PYGAME_GHOST_RADIUS), round(Constants.PYGAME_GHOST_RADIUS)),
-                           Constants.PYGAME_GHOST_RADIUS)
-        self.image = image
+        generated = False
+        while not generated:
+            self.x = random.randint(0, Constants.MAP_WIDTH)
+            self.y = random.randint(0, Constants.MAP_HEIGHT)
+            if not (self.is_in_team_0_base() or self.is_in_team_1_base()):
+                generated = True
 
     def run_away(self, busters):
         """
@@ -131,13 +108,19 @@ class Ghost(Entity):
             self.x = new_x
             self.y = new_y
 
-    @classmethod
-    def get_ghost(cls, ids):
+    def being_captured(self, buster):
         """
-        Return the ghost with the id
-        :param ids: the ghost to return
-        :return: a ghost
+        Function that will change the state of the ghost when captured
+        :param buster: the buster that captured him
         """
-        for ghost in cls.ghosts:
-            if ghost.id == ids:
-                return ghost
+        self.x = buster.x
+        self.y = buster.y
+        self.captured = True
+        self.value = Constants.VALUE_GHOST_BASIC
+
+    def kill(self):
+        """
+        Function that will handle the kill of the ghost
+        """
+        self.alive = False
+        self._remove_ghost(self)
