@@ -36,6 +36,7 @@ class GameTest(unittest.TestCase):
         self.assertTrue(game.ghosts[0].value == 1)
         self.assertTrue(game.busters[0].state == Constants.STATE_BUSTER_CARRYING)
         self.assertTrue(game.busters[0].value == game.ghosts[0].id)
+        self.assertTrue(game.busters[0].action == Constants.ACTION_BUSTING)
 
         commands_0 = ["MOVE 50 50"]
         game._run_round(commands_0, commands_1)
@@ -46,3 +47,9 @@ class GameTest(unittest.TestCase):
         self.assertTrue(game.score_team_1 == 0)
         self.assertTrue(game.ghosts[0].x == game.busters[0].x)
         self.assertTrue(game.ghosts[0].y == game.busters[0].y)
+        self.assertTrue(game.ghosts[0].value == 1)
+        self.assertTrue(game.ghosts[0].captured)
+        self.assertTrue(game.ghosts[0].alive)
+        self.assertTrue(game.busters[0].value == game.ghosts[0].id)
+        self.assertTrue(game.busters[0].action == Constants.ACTION_MOVING)
+        self.assertTrue(game.busters[0].state == Constants.STATE_BUSTER_CARRYING)

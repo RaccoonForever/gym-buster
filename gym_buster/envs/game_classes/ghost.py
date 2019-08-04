@@ -116,7 +116,7 @@ class Ghost(Entity):
         self.x = buster.x
         self.y = buster.y
         self.captured = True
-        self.value = Constants.VALUE_GHOST_BASIC
+        self.value = 1
 
     def kill(self):
         """
@@ -124,3 +124,21 @@ class Ghost(Entity):
         """
         self.alive = False
         self._remove_ghost(self)
+
+    def being_released(self, buster):
+        """
+        Function to call when releasing a ghost
+        :param buster: the buster releasing the ghost
+        """
+        self.captured = False
+        self.updating_position(buster)
+        self.angle = buster.angle
+        self.value = Constants.VALUE_GHOST_BASIC
+
+    def updating_position(self, buster):
+        """
+        Function to call to update position of the ghost to be the same of the buster
+        :param buster: the position to copy
+        """
+        self.x = buster.x
+        self.y = buster.y

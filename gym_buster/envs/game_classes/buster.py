@@ -22,6 +22,7 @@ class Buster(Entity):
         """
         super(Buster, self).__init__(type_entity)
         self.value = Constants.VALUE_BUSTER_NOTHING
+        self.action = Constants.ACTION_NOTHING
         self._generate_buster_position()
         print(
             "Buster : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y))
@@ -113,15 +114,16 @@ class Buster(Entity):
             bust = re.match(Constants.ACTION_BUST_REGEX, command)
             if move:
                 self.move(int(move.group(1)), int(move.group(2)))
+                self.action = Constants.ACTION_MOVING
                 print(str(self.id) + " moving to " + str(self.x) + " " + str(self.y))
                 return 0
             elif release:
-                self.release()
-                print(str(self.id) + " releasing")
-                return -1
+                result = self.release()
+                self.action = Constants.ACTION_RELEASING
+                return result
             elif bust:
                 self.bust(int(bust.group(1)))
-                print(str(self.id) + " busting " + bust.group(1))
+                self.action = Constants.ACTION_BUSTING
                 return 0
             else:
                 raise Exception(
@@ -135,16 +137,16 @@ class Buster(Entity):
         """
         if self.value != Constants.VALUE_BUSTER_NOTHING and self.state == Constants.STATE_BUSTER_CARRYING:
             ghost = Ghost.get_ghost(self.value)
-            ghost.captured = False
-            ghost.x = self.x
-            ghost.y = self.y
-            ghost.angle = self.angle
-            ghost.value = Constants.VALUE_GHOST_BASIC
+            ghost.being_released(self)
+
+            print(str(self.id) + " releasing " + str(self.value))
 
             self.value = Constants.VALUE_BUSTER_NOTHING
             self.state = Constants.STATE_BUSTER_NOTHING
 
-            print(str(self.id) + " releasing " + str(self.value))
+            return -1
+
+        return 0
 
     def bust(self, ids):
         """
@@ -152,9 +154,10 @@ class Buster(Entity):
         :param ids: the ghost to catch
         """
         ghost = Ghost.get_ghost(ids)
-        if self.state == Constants.STATE_BUSTER_NOTHING and self.can_bust(ghost):
+        if self.state == Constants.STATE_BUSTER_NOTHING and ghost and self.can_bust(ghost):
             ghost.value += 1
             self.value = ids
+            print(str(self.id) + " busting " + str(ids))
 
     def capturing_ghost(self):
         """

@@ -220,7 +220,8 @@ class Game:
                 self.score_team_1 += 1
                 ghost.kill()
                 remove_ghosts.append(ghost)
-            ghost.value = Constants.VALUE_GHOST_BASIC
+            elif not ghost.captured:
+                ghost.value = Constants.VALUE_GHOST_BASIC
 
         # Remove ghosts not available anymore
         for ghost in remove_ghosts:
@@ -255,6 +256,8 @@ class Game:
                         nb_buster_team_1_busting_this_ghost.append(buster)
 
                 closest = None
+                buster_on_this_ghost = len(nb_buster_team_0_busting_this_ghost) + len(
+                    nb_buster_team_1_busting_this_ghost)
 
                 # If list length != 0 and same value then draw nobody take the ghost
                 if len(nb_buster_team_0_busting_this_ghost) == len(nb_buster_team_1_busting_this_ghost) and len(
@@ -281,15 +284,17 @@ class Game:
                             closest = buster
 
                 # Reset all busters with this ghost id except closest
-                if closest:
-                    if closest.type == Constants.TYPE_BUSTER_TEAM_0:
+                if closest and buster_on_this_ghost >= 1:
+                    if closest.type == Constants.TYPE_BUSTER_TEAM_0 and closest.action == Constants.ACTION_BUSTING:
                         self.score_team_0 += 1
-
-                    if closest.type == Constants.TYPE_BUSTER_TEAM_1:
+                        ghost.being_captured(closest)
+                        closest.capturing_ghost()
+                    elif closest.type == Constants.TYPE_BUSTER_TEAM_1 and closest.action == Constants.ACTION_BUSTING:
                         self.score_team_1 += 1
-
-                    ghost.being_captured(closest)
-                    closest.capturing_ghost()
+                        ghost.being_captured(closest)
+                        closest.capturing_ghost()
+                    else:
+                        ghost.updating_position(closest)
 
                     for buster in nb_buster_team_0_busting_this_ghost + nb_buster_team_1_busting_this_ghost:
                         if buster != closest:
@@ -301,7 +306,8 @@ class Game:
 
         # make ghost run away for those who are not being busted
         for ghost in self.ghosts:
-            ghost.run_away(self.busters)
+            if not ghost.captured and ghost.alive:
+                ghost.run_away(self.busters)
 
     def run_step(self, commands):
         """
