@@ -154,7 +154,7 @@ class Buster(Entity):
         :param ids: the ghost to catch
         """
         ghost = Ghost.get_ghost(ids)
-        if self.state == Constants.STATE_BUSTER_NOTHING and ghost and self.can_bust(ghost):
+        if self.state == Constants.STATE_BUSTER_NOTHING and ghost and self.can_bust(ghost) and not ghost.captured:
             ghost.value += 1
             self.value = ids
             print(str(self.id) + " busting " + str(ids))
