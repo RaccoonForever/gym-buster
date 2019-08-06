@@ -23,9 +23,8 @@ class Buster(Entity):
         super(Buster, self).__init__(type_entity)
         self.value = Constants.VALUE_BUSTER_NOTHING
         self.action = Constants.ACTION_NOTHING
+        self.team = type_entity
         self._generate_buster_position()
-        print(
-            "Buster : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y))
 
     @classmethod
     def _generate_id(cls, team, obj):
@@ -166,3 +165,9 @@ class Buster(Entity):
         :param ghost: the captured ghost
         """
         self.state = Constants.STATE_BUSTER_CARRYING
+
+    def __str__(self):
+        """
+        Display function
+        """
+        return 'Buster team {}, Id: {}, X: {}, Y: {}, Action: {}, Value: {}, State: {}, Captured: {}, Alive: {}'.format(self.team, self.id, self.x, self.y, self.action, self.value, self.state, self.captured, self.alive)
