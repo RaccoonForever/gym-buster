@@ -1,8 +1,8 @@
 import random
 from math import cos, sin, atan2, degrees, radians
 
-from .math_utils import MathUtility
-from .constants import Constants
+from gym_buster.envs.game_classes.math_utils import MathUtility
+from gym_buster.envs.game_classes.constants import Constants
 
 
 class Entity:
@@ -24,6 +24,7 @@ class Entity:
         self.size = 10
         self.state = Constants.STATE_BUSTER_NOTHING
 
+    @property
     def is_in_team_0_base(self):
         """
         Function that say if the entity is in team0 base
@@ -31,6 +32,7 @@ class Entity:
         """
         return MathUtility.distance(0, 0, self.x, self.y) < Constants.ENTITY_RANGE_VISION
 
+    @property
     def is_in_team_1_base(self):
         """
         Function that say if the entity is in team1 base
