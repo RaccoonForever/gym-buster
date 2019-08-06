@@ -1,9 +1,9 @@
 import random
 import copy
 
-from .entity import Entity
-from .constants import Constants
-from .math_utils import MathUtility
+from gym_buster.envs.game_classes.entity import Entity
+from gym_buster.envs.game_classes.constants import Constants
+from gym_buster.envs.game_classes.math_utils import MathUtility
 
 
 class Ghost(Entity):
@@ -25,7 +25,6 @@ class Ghost(Entity):
         self._generate_random_ghost_position()
         self.alive = True
         self.captured = False
-        print("Ghost : " + str(self.id) + ", position : " + str(self.x) + " " + str(self.y))
 
     @classmethod
     def _generate_id(cls):
@@ -142,3 +141,9 @@ class Ghost(Entity):
         """
         self.x = buster.x
         self.y = buster.y
+
+    def __str__(self):
+        """
+        Display function
+        """
+        return 'Ghost {}, X: {}, Y: {}, Value: {}, State: {}, Captured: {}, Alive: {}'.format(self.id, self.x, self.y, self.value, self.state, self.captured, self.alive)
