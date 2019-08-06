@@ -1,10 +1,10 @@
 import re
 import copy
 
-from .entity import Entity
-from .constants import Constants
-from .ghost import Ghost
-from .math_utils import MathUtility
+from gym_buster.envs.game_classes.entity import Entity
+from gym_buster.envs.game_classes.constants import Constants
+from gym_buster.envs.game_classes.ghost import Ghost
+from gym_buster.envs.game_classes.math_utils import MathUtility
 
 
 class Buster(Entity):
@@ -84,15 +84,16 @@ class Buster(Entity):
         else:
             raise ValueError("Entity neither in team 0 or team 1")
 
+    @property
     def is_in_team_base(self):
         """
         Function that gives us true if the buster is in team base
         :return: true or false
         """
         if self.type == Constants.TYPE_BUSTER_TEAM_0:
-            return self.is_in_team_0_base()
+            return self.is_in_team_0_base
         elif self.type == Constants.TYPE_BUSTER_TEAM_1:
-            return self.is_in_team_1_base()
+            return self.is_in_team_1_base
 
     def can_bust(self, ghost):
         """
