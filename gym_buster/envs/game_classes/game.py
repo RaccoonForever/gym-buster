@@ -3,13 +3,13 @@ import sys
 
 from gym_buster.envs.game_classes.render.ghost_sprite import GhostSprite
 from gym_buster.envs.game_classes.render.buster_sprite import BusterSprite
-from .constants import Constants
-from .map import Map
-from .ghost import Ghost
-from .buster import Buster
-from .entity import Entity
-from .math_utils import MathUtility
-from .ai_behaviour import Aibehaviour
+from gym_buster.envs.game_classes.constants import Constants
+from gym_buster.envs.game_classes.map import Map
+from gym_buster.envs.game_classes.ghost import Ghost
+from gym_buster.envs.game_classes.buster import Buster
+from gym_buster.envs.game_classes.entity import Entity
+from gym_buster.envs.game_classes.math_utils import MathUtility
+from gym_buster.envs.game_classes.ai_behaviour import Aibehaviour
 
 
 class Game:
@@ -25,21 +25,14 @@ class Game:
         self.mode = mode
         self.ghost_number = ghost_number
         self.buster_number = buster_number
-        self.window_height = Constants.PYGAME_WINDOW_HEIGHT
-        self.window_width = Constants.PYGAME_WINDOW_WIDTH
-        self._init_screen()
+        self.round_number = round_number
+        self.reset()
+        
         self._generate_ghosts(self.ghost_number)
         self._generate_busters(self.buster_number)
-        self.board = Map(Constants.MAP_WIDTH, Constants.MAP_HEIGHT)
-        self.speed = Constants.PYGAME_SPEED
-        self.running = True
+        self._init_screen()
         self.clock = pygame.time.Clock()
-        self.score_team_0 = 0
-        self.score_team_1 = 0
-        self.round_number = round_number
-        self.state = {}
-        self.battle_ended = False
-        self.battle_won = False
+        
 
     def reset(self):
         """
@@ -49,6 +42,13 @@ class Game:
         self.window_width = Constants.PYGAME_WINDOW_WIDTH
         self.board = Map(Constants.MAP_WIDTH, Constants.MAP_HEIGHT)
         self.speed = Constants.PYGAME_SPEED
+        
+        self.score_team_0 = 0
+        self.score_team_1 = 0
+        self.running = True
+        self.battle_ended = False
+        self.battle_won = False
+        self.state = {}
 
     def _init_screen(self):
         """
