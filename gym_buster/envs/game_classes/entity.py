@@ -63,8 +63,6 @@ class Entity:
         :param y: the y coordinate
         """
         x_max, y_max = self._compute_max_move(x, y)
-        print("Angle : " + str(self.angle))
-        print("X_Max : " + str(x_max) + ", Y_Max : " + str(y_max))
         self.x = x_max
         self.y = y_max
 
@@ -95,14 +93,6 @@ class Entity:
                 result += 1
 
         return result
-
-    def convert_position_to_pygame(self, radius):
-        """
-        Function that will convert x,y position of the entity to pygame pixel
-        :return: a tuple of converted coordinates
-        """
-        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - radius),
-                round(self.y * Constants.PYGAME_RATIO_HEIGHT - radius))
 
     @staticmethod
     def get_entities_visible(entities, targets):

@@ -28,7 +28,7 @@ class Aibehaviour:
                 if buster.state == Constants.STATE_BUSTER_CARRYING and busters_already_treated[buster] is None:
                     print("Buster " + str(buster.id) + " carrying a ghost.")
                     # Verify if in base else go back to base
-                    if buster.is_in_team_base():
+                    if buster.is_in_team_base:
                         busters_already_treated[buster] = "RELEASE"
                     else:
                         busters_already_treated[buster] = "MOVE 15000 8000"

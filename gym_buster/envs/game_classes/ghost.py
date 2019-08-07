@@ -1,12 +1,14 @@
 import random
 import copy
+import pygame
 
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.constants import Constants
 from gym_buster.envs.game_classes.math_utils import MathUtility
+from gym_buster.envs.game_classes.render.entity_sprite import EntitySprite
 
 
-class Ghost(Entity):
+class Ghost(Entity, EntitySprite):
     """
     Class that will handle the ghost entity
     """
@@ -20,11 +22,16 @@ class Ghost(Entity):
         """
         super(Ghost, self).__init__(Constants.TYPE_GHOST)
         self.value = Constants.VALUE_GHOST_BASIC
+
+        self._create_image(Constants.PYGAME_GHOST_COLOR)
+
         self.id = self._generate_id()
         self._add_ghost(self)
         self._generate_random_ghost_position()
         self.alive = True
         self.captured = False
+
+    # -------------- CLASS METHODS ---------------- #
 
     @classmethod
     def _generate_id(cls):
@@ -72,6 +79,52 @@ class Ghost(Entity):
                 return ghost
         return None
 
+    # -------------- END CLASS METHODS ---------------- #
+
+    # ------------- RENDERING FUNCTIONS -------------------#
+
+    def _create_image(self, color):
+        """
+        Create the first image of the ghost
+        :param color: the color of the ghost
+        """
+        image = pygame.Surface((Constants.PYGAME_GHOST_RADIUS * 2, Constants.PYGAME_GHOST_RADIUS * 2)).convert_alpha()
+        image.fill((0, 0, 0, 0))
+        pygame.draw.circle(image, color,
+                           (round(Constants.PYGAME_GHOST_RADIUS), round(Constants.PYGAME_GHOST_RADIUS)),
+                           Constants.PYGAME_GHOST_RADIUS)
+        self.image = image
+
+    def convert_position_to_pygame(self):
+        """
+        Function that will convert x,y position of the entity to pygame pixel
+        :return: a tuple of converted coordinates
+        """
+        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS),
+                round(self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS))
+
+    def draw(self, surface):
+        """
+        Draw the buster on the surface
+        :param surface: the surface where to render the buster image
+        """
+        if not self.alive or self.captured:
+            self.image = pygame.Surface((1, 1)).convert_alpha()
+            self.image.fill((0, 0, 0, 0))
+        else:
+            self.image = pygame.Surface(
+                (Constants.PYGAME_GHOST_RADIUS * 2, Constants.PYGAME_GHOST_RADIUS * 2)).convert_alpha()
+            self.image.fill((0, 0, 0, 0))
+            pygame.draw.circle(self.image, Constants.PYGAME_GHOST_COLOR,
+                               (round(Constants.PYGAME_GHOST_RADIUS), round(Constants.PYGAME_GHOST_RADIUS)),
+                               Constants.PYGAME_GHOST_RADIUS)
+
+        surface.blit(self.image, self.convert_position_to_pygame())
+
+    # -------------- END RENDERING FUNCTIONS ----------------#
+
+    # -------------- PRIVATE FUNCTIONS ----------------#
+
     def _generate_random_ghost_position(self):
         """
         Function that generate a random position for the ghost
@@ -80,9 +133,12 @@ class Ghost(Entity):
         while not generated:
             self.x = random.randint(0, Constants.MAP_WIDTH)
             self.y = random.randint(0, Constants.MAP_HEIGHT)
-            if not (self.is_in_team_0_base() or self.is_in_team_1_base()):
+            if not (self.is_in_team_0_base or self.is_in_team_1_base):
                 generated = True
 
+    # -------------- END PRIVATE FUNCTIONS ----------------#
+
+    # -------------- UPDATING ATTRIBUTES FUNCTIONS ----------------#
     def run_away(self, busters):
         """
         Function that will make the ghost run away from the closest buster
@@ -142,8 +198,12 @@ class Ghost(Entity):
         self.x = buster.x
         self.y = buster.y
 
+    # -------------- END UPDATING ATTRIBUTES FUNCTIONS ----------------#
+
     def __str__(self):
         """
         Display function
         """
-        return 'Ghost {}, X: {}, Y: {}, Value: {}, State: {}, Captured: {}, Alive: {}'.format(self.id, self.x, self.y, self.value, self.state, self.captured, self.alive)
+        return 'Ghost {}, X: {}, Y: {}, Value: {}, State: {}, Captured: {}, Alive: {}'.format(self.id, self.x, self.y,
+                                                                                              self.value, self.state,
+                                                                                              self.captured, self.alive)

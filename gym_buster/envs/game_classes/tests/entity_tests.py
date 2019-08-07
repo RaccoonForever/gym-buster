@@ -16,28 +16,28 @@ class EntityTest(unittest.TestCase):
         self.entity.y = 0
 
     def test_is_in_team_0_base(self):
-        self.assertTrue(self.entity.is_in_team_0_base())
+        self.assertTrue(self.entity.is_in_team_0_base)
 
         self.entity.x = 1000
         self.entity.y = 1000
-        self.assertTrue(self.entity.is_in_team_0_base())
+        self.assertTrue(self.entity.is_in_team_0_base)
 
         self.entity.x = 2000
         self.entity.y = 2000
-        self.assertFalse(self.entity.is_in_team_0_base())
+        self.assertFalse(self.entity.is_in_team_0_base)
 
     def test_is_in_team_1_base(self):
         self.entity.x = Constants.MAP_WIDTH
         self.entity.y = Constants.MAP_HEIGHT
-        self.assertTrue(self.entity.is_in_team_1_base())
+        self.assertTrue(self.entity.is_in_team_1_base)
 
         self.entity.x = Constants.MAP_WIDTH - 1000
         self.entity.y = Constants.MAP_HEIGHT - 1000
-        self.assertTrue(self.entity.is_in_team_1_base())
+        self.assertTrue(self.entity.is_in_team_1_base)
 
         self.entity.x = Constants.MAP_WIDTH - 2500
         self.entity.y = Constants.MAP_HEIGHT - 2500
-        self.assertFalse(self.entity.is_in_team_1_base())
+        self.assertFalse(self.entity.is_in_team_1_base)
 
     def test_compute_max_move(self):
         res_x, res_y = self.entity._compute_max_move(Constants.BUSTER_MAX_MOVE - 200, 0)

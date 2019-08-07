@@ -1,13 +1,15 @@
 import re
 import copy
+import pygame
 
+from gym_buster.envs.game_classes.render.entity_sprite import EntitySprite
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.constants import Constants
 from gym_buster.envs.game_classes.ghost import Ghost
 from gym_buster.envs.game_classes.math_utils import MathUtility
 
 
-class Buster(Entity):
+class Buster(Entity, EntitySprite):
     """
     Class that will handle busters
     """
@@ -24,7 +26,12 @@ class Buster(Entity):
         self.value = Constants.VALUE_BUSTER_NOTHING
         self.action = Constants.ACTION_NOTHING
         self.team = type_entity
+
+        self._create_image(None)
+
         self._generate_buster_position()
+
+    # -------------- CLASSMETHODS ----------------#
 
     @classmethod
     def _generate_id(cls, team, obj):
@@ -68,6 +75,42 @@ class Buster(Entity):
                 return buster
         return None
 
+    # -------------- END CLASSMETHODS ----------------#
+
+    # --------------- RENDERING FUNCTIONS ---------------#
+
+    def _create_image(self, color):
+        """
+        Create the first image of the ghost
+        :param color: the color of the ghost
+        """
+        image = pygame.Surface((Constants.PYGAME_BUSTER_RADIUS * 2, Constants.PYGAME_BUSTER_RADIUS * 2)).convert_alpha()
+        image.fill((0, 0, 0, 0))
+        if self.type == Constants.TYPE_BUSTER_TEAM_0:
+            self.color = Constants.PYGAME_BUSTER_TEAM_0_COLOR
+        else:
+            self.color = Constants.PYGAME_BUSTER_TEAM_1_COLOR
+        pygame.draw.circle(image, self.color,
+                           (round(Constants.PYGAME_BUSTER_RADIUS), round(Constants.PYGAME_BUSTER_RADIUS)),
+                           Constants.PYGAME_BUSTER_RADIUS)
+        self.image = image
+
+    def convert_position_to_pygame(self):
+        """
+        Function that will convert x,y position of the entity to pygame pixel
+        :return: a tuple of converted coordinates
+        """
+        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_BUSTER_RADIUS),
+                round(self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_BUSTER_RADIUS))
+
+    def draw(self, surface):
+        """
+        Draw the buster on the surface
+        :param surface: the surface where to render the buster image
+        """
+        surface.blit(self.image, self.convert_position_to_pygame())
+
+    # -------------- PRIVATE FUNCTIONS AND PROPERTIES ----------------#
     def _generate_buster_position(self):
         """
         Function that handle the initial position for busters
@@ -94,6 +137,10 @@ class Buster(Entity):
         elif self.type == Constants.TYPE_BUSTER_TEAM_1:
             return self.is_in_team_1_base
 
+    # -------------- PRIVATE FUNCTIONS AND PROPERTIES ----------------#
+
+    # -------------- CAN PERFORM ACTION FUNCTIONS ----------------#
+
     def can_bust(self, ghost):
         """
         Function that will tell if you can bust the ghost
@@ -102,6 +149,10 @@ class Buster(Entity):
         """
         distance = MathUtility.distance(ghost.x, ghost.y, self.x, self.y)
         return Constants.BUSTER_BUST_MIN_RANGE <= distance <= Constants.BUSTER_BUST_MAX_RANGE
+
+    # -------------- END CAN PERFORM ACTION FUNCTIONS ----------------#
+
+    # -------------- ACTION FUNCTIONS ----------------#
 
     def buster_command(self, command):
         """
@@ -115,7 +166,7 @@ class Buster(Entity):
             if move:
                 self.move(int(move.group(1)), int(move.group(2)))
                 self.action = Constants.ACTION_MOVING
-                print(str(self.id) + " moving to " + str(self.x) + " " + str(self.y))
+                print(str(self) + " moving to " + str(self.x) + " " + str(self.y))
                 return 0
             elif release:
                 result = self.release()
@@ -127,7 +178,7 @@ class Buster(Entity):
                 return 0
             else:
                 raise Exception(
-                    "Wrong command for buster : " + str(self.id) + " , x : " + str(self.x) + ", y : " + str(self.y))
+                    "Wrong command for buster : " + str(self) + " , x : " + str(self.x) + ", y : " + str(self.y))
         except Exception as exc:
             raise exc
 
@@ -139,7 +190,7 @@ class Buster(Entity):
             ghost = Ghost.get_ghost(self.value)
             ghost.being_released(self)
 
-            print(str(self.id) + " releasing " + str(self.value))
+            print(str(self) + " releasing " + str(self.value))
 
             self.value = Constants.VALUE_BUSTER_NOTHING
             self.state = Constants.STATE_BUSTER_NOTHING
@@ -157,17 +208,19 @@ class Buster(Entity):
         if self.state == Constants.STATE_BUSTER_NOTHING and ghost and self.can_bust(ghost) and not ghost.captured:
             ghost.value += 1
             self.value = ids
-            print(str(self.id) + " busting " + str(ids))
+            print(str(self) + " busting " + str(ghost))
 
     def capturing_ghost(self):
         """
         Function that will change the state of the buster
-        :param ghost: the captured ghost
         """
         self.state = Constants.STATE_BUSTER_CARRYING
+
+    # -------------- END ACTION FUNCTIONS ----------------#
 
     def __str__(self):
         """
         Display function
         """
-        return 'Buster team {}, Id: {}, X: {}, Y: {}, Action: {}, Value: {}, State: {}, Captured: {}, Alive: {}'.format(self.team, self.id, self.x, self.y, self.action, self.value, self.state, self.captured, self.alive)
+        return 'Buster team {}, Id: {}, X: {}, Y: {}, Action: {}, Value: {}, State: {}'.format(
+            self.team, self.id, self.x, self.y, self.action, self.value, self.state)

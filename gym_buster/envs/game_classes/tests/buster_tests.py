@@ -1,4 +1,5 @@
 import unittest
+import pygame
 
 from gym_buster.envs.game_classes.buster import Buster
 from gym_buster.envs.game_classes.ghost import Ghost
@@ -11,7 +12,17 @@ class BusterTest(unittest.TestCase):
         Buster._reset_busters()
         Ghost._reset_ghost()
 
+    def init(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode(
+            (Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT))
+
+    def exit(self):
+        pygame.quit()
+
     def test_generate_buster_position(self):
+        self.init()
+
         buster = Buster(Constants.TYPE_BUSTER_TEAM_1)
         self.assertTrue(buster.x == Constants.MAP_WIDTH - 50)
         self.assertTrue(buster.y == Constants.MAP_HEIGHT - 50)
@@ -20,8 +31,11 @@ class BusterTest(unittest.TestCase):
         self.assertTrue(buster.x == 50)
         self.assertTrue(buster.y == 50)
         self.reset()
+        self.exit()
 
     def test_get_buster(self):
+        self.init()
+
         buster1 = Buster(Constants.TYPE_BUSTER_TEAM_1)
         buster2 = Buster(Constants.TYPE_BUSTER_TEAM_1)
         buster3 = Buster(Constants.TYPE_BUSTER_TEAM_1)
@@ -37,8 +51,11 @@ class BusterTest(unittest.TestCase):
         entities = [buster1, buster2, buster3, buster4]
         self.assertTrue(Buster.get_buster(entities, 3, Constants.TYPE_BUSTER_TEAM_0) == buster3)
         self.reset()
+        self.exit()
 
     def test_can_bust(self):
+        self.init()
+
         buster1 = Buster(Constants.TYPE_BUSTER_TEAM_0)
         ghost = Ghost()
         ghost.x = 3000
@@ -54,8 +71,12 @@ class BusterTest(unittest.TestCase):
         self.assertTrue(buster1.can_bust(ghost))
 
         self.reset()
+        self.exit()
 
     def test_release(self):
+
+        self.init()
+
         ghost1 = Ghost()
         ghost2 = Ghost()  # To increase by 1 the counter in Ghost class
 
@@ -72,8 +93,12 @@ class BusterTest(unittest.TestCase):
         self.assertTrue(buster1.state == Constants.STATE_BUSTER_NOTHING)
 
         self.reset()
+        self.exit()
 
     def test_bust(self):
+
+        self.init()
+
         ghost1 = Ghost()
         ghost2 = Ghost()
         ghost2.x = 3500
@@ -104,3 +129,4 @@ class BusterTest(unittest.TestCase):
         self.assertTrue(buster1.value == ghost2.id)
 
         self.reset()
+        self.exit()

@@ -144,7 +144,6 @@ class BusterEnv(gym.Env):
         :param actions: the actions
         :return: a list of 3 commands
         """
-        print(actions)
         result = ["" for i in range(self.buster_number)]
         for i in range(self.buster_number):
             # Privilege to bust then release then move
