@@ -260,8 +260,7 @@ class Game(GameRendering):
         self._run_round(commands, commands_team_1)
         self.game_render()
         pygame.display.flip()
-        self.clock.tick(Constants.FPS)
-        pygame.time.delay(1000)
+        self.clock.tick_busy_loop(Constants.FPS)
 
         # Check alive ghosts
         if len(self.ghosts) == 0:
