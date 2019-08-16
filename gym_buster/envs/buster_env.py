@@ -94,7 +94,7 @@ class BusterEnv(gym.Env):
         Function that will say if a game is over
         :return: boolean
         """
-        return self.state['battle_ended']
+        return self.state['battle_ended'] or self.episode_step > self.max_episodes_steps
 
     def _get_info(self):
         """
