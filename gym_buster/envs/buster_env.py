@@ -14,7 +14,7 @@ class BusterEnv(gym.Env):
     """
     metadata = {'render.modes': ['human', 'console']}
 
-    def __init__(self, buster_number, ghost_number, episodes, max_steps):
+    def __init__(self, buster_number, ghost_number, episodes, max_steps, rendering):
         self.buster_number = int(buster_number)
         self.ghost_number = int(ghost_number)
         self.state = None
@@ -28,6 +28,8 @@ class BusterEnv(gym.Env):
         self.max_episodes_steps = int(max_steps)  # Number of max steps in a game
         self.episode_step = 0
         self.episodes_win = 0
+        
+        self.render = rendering
 
         self.game = Game('human', self.ghost_number, self.buster_number, self.max_episodes_steps)
 
@@ -108,7 +110,7 @@ class BusterEnv(gym.Env):
 
         # Run a step in the game
         actions = self._transform_action(action)
-        self.game.run_step(actions)
+        self.game.run_step(actions, self.render)
 
         self.state = self.game.get_state()
         self.previous_observation = self.observation
