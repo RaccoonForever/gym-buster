@@ -251,16 +251,17 @@ class Game(GameRendering):
             if not ghost.captured and ghost.alive:
                 ghost.run_away(self.busters)
 
-    def run_step(self, commands):
+    def run_step(self, commands, render):
         """
         Run a step of the game
         :param commands:  the commands coming from the agent
         """
         commands_team_1 = Aibehaviour.next_command(Buster.busters_1, self.ghosts)
         self._run_round(commands, commands_team_1)
-        self.game_render()
-        pygame.display.flip()
-        self.clock.tick_busy_loop(Constants.FPS)
+        if render:
+            self.game_render()
+            pygame.display.flip()
+            self.clock.tick_busy_loop(Constants.FPS)
 
         # Check alive ghosts
         if len(self.ghosts) == 0:
