@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--buster_number', help="Number of buster in each team", required=True)
     args = parser.parse_args()
 
-    environment = env.BusterEnv(args.buster_number, args.ghost_number, args.max_episodes, args.max_steps)
+    environment = env.BusterEnv(args.buster_number, args.ghost_number, args.max_episodes, args.max_steps, True)
     environment.seed(123)
     agent = RandomAgent(environment.action_space)
 
