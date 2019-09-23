@@ -1,0 +1,5 @@
+*.egg-info
+*.pyc
+.idea
+/logs
+_trial_temp*
