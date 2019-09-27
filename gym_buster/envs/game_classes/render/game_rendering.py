@@ -30,7 +30,7 @@ class GameRendering:
         Function called to render the writings on the screen
         """
         self.font = pygame.font.Font('freesansbold.ttf', 20)
-        self.text_surface_obj = self.font.render("Team 1 = 0 | Team 2 = 0", True, Constants.PYGAME_WHITE)
+        self.text_surface_obj = self.font.render("Team 1 = 0 | Team 2 = 0 | Step = 0", True, Constants.PYGAME_WHITE)
         self.text_rect_obj = self.text_surface_obj.get_rect()
         self.text_rect_obj.center = (
             round(Constants.PYGAME_WINDOW_WIDTH * 0.2), round(Constants.PYGAME_WINDOW_HEIGHT * 0.9))

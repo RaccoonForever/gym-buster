@@ -110,7 +110,7 @@ class BusterEnv(gym.Env):
 
         # Run a step in the game
         actions = self._transform_action(action)
-        self.game.run_step(actions, self.render)
+        self.game.run_step(actions, self.render, self.episode_step)
 
         self.state = self.game.get_state()
         self.previous_observation = self.observation
@@ -123,7 +123,7 @@ class BusterEnv(gym.Env):
 
     def reset(self):
 
-        if self.episode_step >= self.max_episodes_steps:
+        if self._check_done():
             # End it and start a new game
             self.game.exit()
             self.game = Game('human', self.ghost_number, self.buster_number, self.max_episodes_steps)

@@ -47,10 +47,11 @@ class Game(GameRendering):
 
         self.score_team_0 = 0
         self.score_team_1 = 0
+        self.step = 0
         self.running = True
         self.battle_ended = False
         self.battle_won = False
-        self.state = {}
+        self.state = {'battle_ended': False}
 
     def _generate_busters(self, buster_number):
         """
@@ -60,7 +61,7 @@ class Game(GameRendering):
         self.busters = []
         for i in range(buster_number):
             self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_0))
-            print(str(self.busters[i-1]))
+            print(str(self.busters[i - 1]))
 
         for i in range(buster_number):
             self.busters.append(Buster(Constants.TYPE_BUSTER_TEAM_1))
@@ -101,7 +102,8 @@ class Game(GameRendering):
         Function where score is evolving and redering it in text on screen
         """
         self.text_surface_obj = self.font.render(
-            "Team 1 = " + str(self.score_team_0) + " | Team 2 = " + str(self.score_team_1), True,
+            "Team 1 = " + str(self.score_team_0) + " | Team 2 = " + str(self.score_team_1) + " | Step = " + str(
+                self.step), True,
             Constants.PYGAME_WHITE)
         self.text_rect_obj = self.text_surface_obj.get_rect()
         self.text_rect_obj.center = (
@@ -251,11 +253,12 @@ class Game(GameRendering):
             if not ghost.captured and ghost.alive:
                 ghost.run_away(self.busters)
 
-    def run_step(self, commands, render):
+    def run_step(self, commands, render, step):
         """
         Run a step of the game
         :param commands:  the commands coming from the agent
         """
+        self.step = step
         commands_team_1 = Aibehaviour.next_command(Buster.busters_1, self.ghosts)
         self._run_round(commands, commands_team_1)
         if render:
