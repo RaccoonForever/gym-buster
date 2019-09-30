@@ -23,6 +23,8 @@ class Entity:
         self.direction = 0
         self.size = 10
         self.state = Constants.STATE_BUSTER_NOTHING
+        self.render_img = None
+        self.render_trans = None
 
     @property
     def is_in_team_0_base(self):

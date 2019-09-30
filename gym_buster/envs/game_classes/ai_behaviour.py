@@ -3,13 +3,10 @@ import random
 from .constants import Constants
 
 
-class Aibehaviour:
+class Aibehaviour(object):
     """
     Class that will handle an easy / medium IA
     """
-
-    def __init__(self):
-        pass
 
     @staticmethod
     def next_command(busters, ghosts):
@@ -36,7 +33,9 @@ class Aibehaviour:
 
                 # If a busters can see a ghost then go on it (only one)
                 for ghost in ghosts:
-                    if buster.can_bust(ghost) and busters_already_treated[buster] is None:
+                    if buster.can_bust(ghost) and busters_already_treated[
+                        buster] is None \
+                            and ghost.alive and not ghost.captured:
                         busters_already_treated[buster] = "BUST " + str(ghost.id)
                         ghosts_already_treated.append(ghost)
                         continue
@@ -44,7 +43,8 @@ class Aibehaviour:
                 # if busters can see a ghost go for it
                 for ghost in ghosts:
                     if not buster.can_bust(ghost) and ghost not in ghosts_already_treated and \
-                            busters_already_treated[buster] is None:
+                            busters_already_treated[buster] is None \
+                            and ghost.alive and not ghost.captured:
                         busters_already_treated[buster] = "MOVE " + str(int(ghost.x)) + " " + str(int(ghost.y))
                         ghosts_already_treated.append(ghost)
                         continue

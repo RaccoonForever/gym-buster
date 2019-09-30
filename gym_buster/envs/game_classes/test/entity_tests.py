@@ -3,7 +3,7 @@ import unittest
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.math_utils import MathUtility
 from gym_buster.envs.game_classes.constants import Constants
-from gym_buster.envs.game_classes.tests.tests_utils import TestUtils
+from gym_buster.envs.game_classes.test.tests_utils import TestUtils
 
 
 class EntityTest(unittest.TestCase):

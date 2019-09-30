@@ -65,7 +65,9 @@ if __name__ == '__main__':
                                 args.rendering)
     environment.seed(123)
 
-    session = tf.Session()
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
     # state normalization
     state_space_samples = np.array(
@@ -73,74 +75,76 @@ if __name__ == '__main__':
     scaler = sklearn.preprocessing.StandardScaler()
     scaler.fit(state_space_samples)
 
-    ac = ActorCritic(environment, session, scaler)
+    with tf.Session(config=config) as session:
 
-    lr_actor = 0.00002
-    lr_critic = 0.001
+        ac = ActorCritic(environment, session, scaler)
 
-    action_placeholder = tf.placeholder(tf.float32)
-    delta_placeholder = tf.placeholder(tf.float32)
-    target_placeholder = tf.placeholder(tf.float32)
-    state_placeholder = tf.placeholder(tf.float32, [None, ac.input_dims])
+        lr_actor = 0.00002
+        lr_critic = 0.001
 
-    action_tf_var, norm_dist = ac.policy_network(state_placeholder)
-    value = ac.value_function(state_placeholder)
+        action_placeholder = tf.placeholder(tf.float32)
+        delta_placeholder = tf.placeholder(tf.float32)
+        target_placeholder = tf.placeholder(tf.float32)
+        state_placeholder = tf.placeholder(tf.float32, [None, ac.input_dims])
 
-    loss_actor = -tf.log(norm_dist.prob(action_placeholder) + 1e-5) * delta_placeholder
-    training_op_actor = tf.train.AdamOptimizer(lr_actor, name='actor_optimizer').minimize(loss_actor)
+        action_tf_var, norm_dist = ac.policy_network(state_placeholder)
+        value = ac.value_function(state_placeholder)
 
-    loss_critic = tf.reduce_mean(tf.squared_difference(tf.squeeze(value), target_placeholder))
-    training_op_critic = tf.train.AdamOptimizer(lr_critic, name='critic_optimizer').minimize(loss_critic)
+        loss_actor = -tf.log(norm_dist.prob(action_placeholder) + 1e-5) * delta_placeholder
+        training_op_actor = tf.train.AdamOptimizer(lr_actor, name='actor_optimizer').minimize(loss_actor)
 
-    gamma = 0.99
+        loss_critic = tf.reduce_mean(tf.squared_difference(tf.squeeze(value), target_placeholder))
+        training_op_critic = tf.train.AdamOptimizer(lr_critic, name='critic_optimizer').minimize(loss_critic)
 
-    episodes = 0
-    session.run(tf.global_variables_initializer())
-    episodes_history = []
+        gamma = 0.99
 
-    while episodes < environment.episodes:
-        state = environment.reset()
+        episodes = 0
+        session.run(tf.global_variables_initializer())
+        episodes_history = []
 
-        reward_total = 0
-        done = False
-        steps = 0
+        while episodes < environment.episodes:
+            state = environment.reset()
 
-        while not done:
-            action = session.run(action_tf_var, feed_dict={state_placeholder: ac.scale_state(state)})
+            reward_total = 0
+            done = False
+            steps = 0
 
-            next_state, reward, done, _ = environment.step(np.squeeze(action, axis=0))
+            while not done:
+                #action = session.run(action_tf_var, feed_dict={state_placeholder: ac.scale_state(state)})
+                action = environment.action_space.sample()
 
-            steps += 1
-            reward_total += reward
+                next_state, reward, done, _ = environment.step(action)#environment.step(np.squeeze(action, axis=0))
 
-            V_of_next_state = session.run(value, feed_dict={state_placeholder: ac.scale_state(next_state)})
 
-            target = reward + gamma * np.squeeze(V_of_next_state)
+                steps += 1
+                reward_total += reward
 
-            td_error = target - np.squeeze(session.run(value, feed_dict={state_placeholder: ac.scale_state(state)}))
+                #V_of_next_state = session.run(value, feed_dict={state_placeholder: ac.scale_state(next_state)})
 
-            _, loss_actor_val = session.run(
-                [training_op_actor, loss_actor],
-                feed_dict={action_placeholder: np.squeeze(action),
-                           state_placeholder: ac.scale_state(state),
-                           delta_placeholder: td_error}
-            )
+                #target = reward + gamma * np.squeeze(V_of_next_state)
 
-            _, loss_critic_val = session.run(
-                [training_op_critic, loss_critic],
-                feed_dict={state_placeholder: ac.scale_state(state),
-                           target_placeholder: target}
-            )
+                #td_error = target - np.squeeze(session.run(value, feed_dict={state_placeholder: ac.scale_state(state)}))
 
-            state = next_state
+                """_, loss_actor_val = session.run(
+                    [training_op_actor, loss_actor],
+                    feed_dict={action_placeholder: np.squeeze(action),
+                               state_placeholder: ac.scale_state(state),
+                               delta_placeholder: td_error}
+                )
 
-        episodes += 1
-        episodes_history.append(reward_total)
-        print("Episode: {}, Number of Steps: {}, Cumulative reward: {}".format(episodes, steps, reward_total))
+                _, loss_critic_val = session.run(
+                    [training_op_critic, loss_critic],
+                    feed_dict={state_placeholder: ac.scale_state(state),
+                               target_placeholder: target}
+                )"""
 
-        if np.mean(episodes_history[-100:]) > 90 and len(episodes_history) >= 101:
-            print("****************Solved***************")
-            print("Mean cumulative reward over 100 episodes:{:0.2f}".format(
-                np.mean(episodes_history[-100:])))
+                state = next_state
 
-    session.close()
+            episodes += 1
+            episodes_history.append(reward_total)
+            print("Episode: {}, Number of Steps: {}, Cumulative reward: {}".format(episodes, steps, reward_total))
+
+            if np.mean(episodes_history[-100:]) > 90 and len(episodes_history) >= 101:
+                print("****************Solved***************")
+                print("Mean cumulative reward over 100 episodes:{:0.2f}".format(
+                    np.mean(episodes_history[-100:])))
