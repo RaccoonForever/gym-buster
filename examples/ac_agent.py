@@ -19,7 +19,7 @@ class ActorCritic(object):
     def value_function(self, state):
         n_hidden1 = 400
         n_hidden2 = 400
-        n_outputs = 12
+        n_outputs = self.env.action_space.shape[0]
 
         with tf.variable_scope("value_network"):
             hidden1 = tf.layers.dense(state, n_hidden1, tf.nn.elu, tf.contrib.layers.xavier_initializer())
@@ -31,7 +31,7 @@ class ActorCritic(object):
     def policy_network(self, state):
         n_hidden1 = 40
         n_hidden2 = 40
-        n_outputs = 12
+        n_outputs = self.env.action_space.shape[0]
 
         with tf.variable_scope("policy_network"):
             init_xavier = tf.contrib.layers.xavier_initializer()
@@ -43,8 +43,7 @@ class ActorCritic(object):
             sigma = tf.nn.softplus(sigma) + 1e-5
             norm_dist = tf.contrib.distributions.Normal(mu, sigma)
             action_tf_var = tf.squeeze(norm_dist.sample(1), axis=0)
-            action_tf_var = tf.clip_by_value(
-                action_tf_var, -1.0, 1.0)
+            action_tf_var = tf.clip_by_value(action_tf_var, -1.0, 1.0)
         return action_tf_var, norm_dist
 
     def scale_state(self, state):
@@ -61,13 +60,8 @@ if __name__ == '__main__':
     parser.add_argument('--rendering', help="Pygame rendering or only console (true or false)", required=True)
     args = parser.parse_args()
 
-    environment = env.BusterEnv(args.buster_number, args.ghost_number, args.max_episodes, args.max_steps,
-                                args.rendering)
+    environment = env.BusterEnv()
     environment.seed(123)
-
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
     # state normalization
     state_space_samples = np.array(
@@ -110,22 +104,20 @@ if __name__ == '__main__':
             steps = 0
 
             while not done:
-                #action = session.run(action_tf_var, feed_dict={state_placeholder: ac.scale_state(state)})
-                action = environment.action_space.sample()
+                action = session.run(action_tf_var, feed_dict={state_placeholder: ac.scale_state(state)})
 
-                next_state, reward, done, _ = environment.step(action)#environment.step(np.squeeze(action, axis=0))
-
+                next_state, reward, done, _ = environment.step(np.squeeze(action, axis=0))
 
                 steps += 1
                 reward_total += reward
 
-                #V_of_next_state = session.run(value, feed_dict={state_placeholder: ac.scale_state(next_state)})
+                V_of_next_state = session.run(value, feed_dict={state_placeholder: ac.scale_state(next_state)})
 
-                #target = reward + gamma * np.squeeze(V_of_next_state)
+                target = reward + gamma * np.squeeze(V_of_next_state)
 
-                #td_error = target - np.squeeze(session.run(value, feed_dict={state_placeholder: ac.scale_state(state)}))
+                td_error = target - np.squeeze(session.run(value, feed_dict={state_placeholder: ac.scale_state(state)}))
 
-                """_, loss_actor_val = session.run(
+                _, loss_actor_val = session.run(
                     [training_op_actor, loss_actor],
                     feed_dict={action_placeholder: np.squeeze(action),
                                state_placeholder: ac.scale_state(state),
@@ -136,7 +128,7 @@ if __name__ == '__main__':
                     [training_op_critic, loss_critic],
                     feed_dict={state_placeholder: ac.scale_state(state),
                                target_placeholder: target}
-                )"""
+                )
 
                 state = next_state
 
