@@ -1,6 +1,5 @@
 import random
 from math import cos, sin, atan2, degrees, radians
-
 from gym_buster.envs.game_classes.math_utils import MathUtility
 from gym_buster.envs.game_classes.constants import Constants
 
@@ -10,6 +9,7 @@ class Entity:
     Class that will handle any entity
     """
 
+    # ---------------- PRIVATE FUNCTIONS AND PROPERTY ------------#
     def __init__(self, type_entity):
         """
         Constructor
@@ -58,6 +58,9 @@ class Entity:
             return MathUtility.limit_coordinates(int(self.x + Constants.BUSTER_MAX_MOVE * cos(
                 radians(self.angle))), self.y - int(Constants.BUSTER_MAX_MOVE * sin(radians(self.angle))))
 
+    # ---------------- END PRIVATE FUNCTIONS AND PROPERTY ------------#
+    
+    # ---------------- ACTION FUNCTIONS -------------- #
     def move(self, x, y):
         """
         Function that move the entity to its new position
@@ -68,6 +71,9 @@ class Entity:
         self.x = x_max
         self.y = y_max
 
+    # --------------- END ACTION FUNCTIONS ------------- #
+    
+    # --------------- UTIL FUNCTIONS FOR ENTITIES --------#
     def get_closest(self, entities):
         """
         Function that gives the closest ghost of the buster from the ghosts list in his vision or of its friends
@@ -112,3 +118,5 @@ class Entity:
                     result.append(target)
 
         return result
+    
+    # --------------- END UTIL FUNCTIONS FOR ENTITIES --------#
