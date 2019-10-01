@@ -74,20 +74,39 @@ class Entity:
     # --------------- END ACTION FUNCTIONS ------------- #
     
     # --------------- UTIL FUNCTIONS FOR ENTITIES --------#
-    def get_closest(self, entities):
+    def get_closest(self, entities, position):
         """
         Function that gives the closest ghost of the buster from the ghosts list in his vision or of its friends
         :param entities: entities list
+        :param position: the position of the closest to return
         :return: an entity and the distance
         """
-        dist = Constants.MAP_MAX_DISTANCE
-        closest = None
+        dist0 = Constants.MAP_MAX_DISTANCE
+        closest0 = None
         for entity in entities:
-            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist:
-                closest = entity
-                dist = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist0:
+                closest0 = entity
+                dist0 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
 
-        return closest, dist
+        closest1 = None
+        dist1 = Constants.MAP_MAX_DISTANCE
+        for entity in entities:
+            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist1 and entity != closest0:
+                closest1 = entity
+                dist1 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+
+        closest2 = None
+        dist2 = Constants.MAP_MAX_DISTANCE
+        for entity in entities:
+            if MathUtility.distance(self.x, self.y, entity.x,
+                                    entity.y) < dist2 and entity != closest0 and entity != closest1:
+                closest2 = entity
+                dist2 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+
+        closest = [closest0, closest1, closest2]
+        dist = [dist0, dist1, dist2]
+
+        return closest[position], dist[position]
 
     def get_number_entities_in_range(self, entities):
         """
