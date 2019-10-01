@@ -1,7 +1,4 @@
 import random
-# import copy
-# import pygame
-#
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.constants import Constants
 from gym_buster.envs.game_classes.math_utils import MathUtility
@@ -12,8 +9,10 @@ class Ghost(Entity):
     Class that will handle the ghost entity
     """
 
+    # Class variable to keep trace of all ghosts for performance
     ghosts = []
 
+    # ------------- PRIVATE AND PROPERTY FUNCTIONS -------------#
     def __init__(self, id):
         """
         Constructor
@@ -26,9 +25,21 @@ class Ghost(Entity):
         self.alive = True
         self.captured = False
         self._add_ghost(self)
+    
+    def _generate_random_ghost_position(self):
+        """
+        Function that generate a random position for the ghost
+        """
+        generated = False
+        while not generated:
+            self.x = random.randint(0, Constants.MAP_WIDTH)
+            self.y = random.randint(0, Constants.MAP_HEIGHT)
+            if not (self.is_in_team_0_base or self.is_in_team_1_base):
+                generated = True
 
-        #
-        #     # -------------- CLASS METHODS ---------------- #
+    # ------------- PRIVATE AND PROPERTY FUNCTIONS -------------#
+     
+    # -------------- CLASS METHODS ---------------- #
 
     @classmethod
     def _add_ghost(cls, obj):
@@ -59,19 +70,6 @@ class Ghost(Entity):
 
     # -------------- END CLASS METHODS ---------------- #
 
-    def _generate_random_ghost_position(self):
-        """
-        Function that generate a random position for the ghost
-        """
-        generated = False
-        while not generated:
-            self.x = random.randint(0, Constants.MAP_WIDTH)
-            self.y = random.randint(0, Constants.MAP_HEIGHT)
-            if not (self.is_in_team_0_base or self.is_in_team_1_base):
-                generated = True
-
-    # -------------- END PRIVATE FUNCTIONS ----------------#
-
     # -------------- UPDATING ATTRIBUTES FUNCTIONS ----------------#
     def run_away(self, busters):
         """
@@ -91,6 +89,7 @@ class Ghost(Entity):
                 closest.append(buster)
 
         # For now run away from the first but we will need to compute the run away from multiple busters same distance
+        # TODO handle barycenter
         if closest:
             new_x, new_y = MathUtility.opposite_direction(self.x, self.y, closest[0].x, closest[0].y,
                                                           Constants.GHOST_RUN_WAY)
