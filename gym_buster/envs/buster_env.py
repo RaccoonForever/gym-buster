@@ -325,7 +325,7 @@ class BusterEnv(gym.Env):
         obs_low = [0.0, 0.0]
         obs_high = [self.ghost_number, self.ghost_number]
         for i in range(self.buster_number):
-            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0]
+            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             obs_high += [1.0, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE,
                          Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE]
 
