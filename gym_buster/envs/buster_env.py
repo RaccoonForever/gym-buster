@@ -421,7 +421,7 @@ class BusterEnv(gym.Env):
                 result[i] = "RELEASE"
             elif actions[i * 4 + 2] > 0.8:
                 # Bust the closest ghost
-                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
+                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 0) #TODO adapt position
                 if ghost:
                     result[i] = "BUST " + str(ghost.id)
                 else:
