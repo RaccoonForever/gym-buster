@@ -23,6 +23,9 @@ class BusterEnv(gym.Env):
     }
 
     def __init__(self):
+        """
+        Initialize the environment
+        """
         print("Initializing environment ...")
         self.ghosts = []
         self.buster_team0 = []
@@ -36,15 +39,15 @@ class BusterEnv(gym.Env):
         self.render_entities = []
         self.viewer = rendering.Viewer(Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT)
 
+        # Game state
         self.score_team0 = 0
         self.score_team1 = 0
-
         self.observation = None
         self.previous_observation = None
         self.state = None
         self.game_over = False
 
-        # State min/max
+        # Observation and action space
         self.observation_space = self._observation_space()
         self.action_space = self._action_space()
 
@@ -55,6 +58,9 @@ class BusterEnv(gym.Env):
         return [seed]
 
     def reset(self):
+        """
+        Function to call to reset environment to a new game
+        """
         print("Resetting environment...")
         self.ghosts = []
         Ghost.reset_ghost()
@@ -72,9 +78,11 @@ class BusterEnv(gym.Env):
             self.buster_team0.append(Buster(Constants.TYPE_BUSTER_TEAM_0, i))
             self.buster_team1.append(Buster(Constants.TYPE_BUSTER_TEAM_1, i))
 
+        # Create ghosts
         for i in range(self.ghost_number):
             self.ghosts.append(Ghost(i))
 
+        # Init rendering images for each entity
         self._init_rendering_entities()
 
         self.state = self._get_state()
@@ -84,20 +92,25 @@ class BusterEnv(gym.Env):
         return self.observation
 
     def step(self, action):
+        """
+        Function to call to move forward one step in the environment
+        """
         self.current_step += 1
         print("--------- STEP {} -----------".format(self.current_step))
         print("Action : {}".format(action))
 
+        # Convert commands given by NN or sampling on action space
         commands = self._transform_action(action)
         self._run_step(commands, None)
 
-        # Check alive ghosts
+        # Check if the game is over
         if len(self.ghosts) == 0:
             self.game_over = True
 
         print("Score team 0 : {}".format(self.score_team0))
         print("Score team 1 : {}".format(self.score_team1))
 
+        # Check alive and captured ghosts
         captured = 0
         alive = 0
         for ghost in self.ghosts:
@@ -117,6 +130,10 @@ class BusterEnv(gym.Env):
         return self.observation, self._compute_reward(), self._check_done() or alive == 0, {}
 
     def _run_step(self, commands_0, commands_1):
+        """
+        Function called by step(...) with both commands for each team
+        If commands_1 is null then it will use a simple AI (class Aibehaviour)
+        """
         if commands_1:
             commands_team_1 = commands_1
         else:
@@ -147,6 +164,12 @@ class BusterEnv(gym.Env):
                     if buster.value == ghost.id:
                         buster_team_1_busting_this_ghost.append(buster)
 
+                # Check number of each team ghost
+                # 1. If same number of buster for each team are busting a ghost then the busing is cancelled for the ghost
+                # and the busters
+                # 2. If different number of buster busting the ghost. The team with most buster win the ghost and it is
+                # captured by the buster of the wnning team the closest. Only the buster with the captured ghost is in a
+                # state carrying with the ghost id as value. The ghost take the position of the buster
                 if len(buster_team_0_busting_this_ghost) == len(buster_team_1_busting_this_ghost) and len(
                         buster_team_1_busting_this_ghost) > 0:
                     ghost.busting_cancelled()
@@ -199,6 +222,9 @@ class BusterEnv(gym.Env):
                 ghost.kill()
 
     def _init_rendering_entities(self):
+        """
+        Function to be called to init rendering entities and initialize the viewer
+        """
         if self.viewer is None:
             self.viewer = rendering.Viewer(Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT)
 
@@ -230,6 +256,9 @@ class BusterEnv(gym.Env):
             self.viewer.add_geom(b)
 
     def render(self, mode='human'):
+        """
+        Function to call to render the state of the game
+        """
         screen_width = Constants.PYGAME_WINDOW_WIDTH
         screen_height = Constants.PYGAME_WINDOW_HEIGHT
 
@@ -256,6 +285,9 @@ class BusterEnv(gym.Env):
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
     def close(self):
+        """
+        Function to call to end the episode before resetting the environment
+        """
         if self.viewer:
             self.viewer.close()
             self.viewer = None
