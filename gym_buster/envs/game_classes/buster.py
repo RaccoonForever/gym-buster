@@ -1,14 +1,20 @@
 import re
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.constants import Constants
-
 from gym_buster.envs.game_classes.ghost import Ghost
 from gym_buster.envs.game_classes.math_utils import MathUtility
 
 
 class Buster(Entity):
+    """
+    Class that will handle a buster entity
+    """
 
+    # -------------- PRIVATE FUNCTIONS AND PROPERTIES ----------------#
     def __init__(self, team, id):
+        """
+        Constructor
+        """
         super(Buster, self).__init__(team)
         self.id = id
         self._generate_buster_position()
@@ -39,10 +45,9 @@ class Buster(Entity):
         elif self.type == Constants.TYPE_BUSTER_TEAM_1:
             return self.is_in_team_1_base
 
-    #
-    #     # -------------- PRIVATE FUNCTIONS AND PROPERTIES ----------------#
-    #
-    # -------------- CAN PERFORM ACTION FUNCTIONS ----------------#
+
+    # -------------- END PRIVATE FUNCTIONS AND PROPERTIES ----------------#
+    # -------------- CAN PERFORM ACTION FUNCTIONS --------------------#
 
     def can_bust(self, ghost):
         """
@@ -144,7 +149,7 @@ class Buster(Entity):
         print("Buster team {} with id {} captured ghost id : {}".format(self.type, self.id, self.value))
 
     # -------------- END ACTION FUNCTIONS ----------------#
-
+    
     def __str__(self):
         """
         Display function
