@@ -1,5 +1,3 @@
-import argparse
-
 import numpy as np
 import tensorflow as tf
 import sklearn
@@ -52,14 +50,6 @@ class ActorCritic(object):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--max_steps', help="Number of maximum steps for each game", required=True)
-    parser.add_argument('--max_episodes', help="Number of maximum games to play", required=True)
-    parser.add_argument('--ghost_number', help="Number of ghosts for each game", required=True)
-    parser.add_argument('--buster_number', help="Number of buster in each team", required=True)
-    parser.add_argument('--rendering', help="Pygame rendering or only console (true or false)", required=True)
-    args = parser.parse_args()
-
     environment = env.BusterEnv()
     environment.seed(123)
 
