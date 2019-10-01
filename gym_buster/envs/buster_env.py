@@ -297,15 +297,15 @@ class BusterEnv(gym.Env):
         """
         Action space for gym env
 
-        For each buster : move_degree, move_distance, or bust or release
+        For each buster : move_X, move_Y, or bust or release
 
         :return: the space
         """
         action_low = []
         action_high = []
         for i in range(self.buster_number):
-            action_low += [-1.0, 0.0, 0.0, 0.0]
-            action_high += [1.0, 1.0, 1.0, 1.0]
+            action_low += [0.0, 0.0, 0.0, 0.0]
+            action_high += [float(Constants.MAP_WIDTH), float(Constants.MAP_HEIGHT), 1.0, 1.0]
 
         return spaces.Box(np.array(action_low), np.array(action_high))
 
@@ -314,11 +314,11 @@ class BusterEnv(gym.Env):
         observation space for gym env
 
         team0 points, team 1 points
+        
+        for each buster : state(carrying or not), ghost_inrange1_X, ghost_inrange1_Y, ghost_inrange2_X, ghost_inrange2_Y,
+        ghost_inrange3_X, ghost_inrange3_Y
 
-        for each buster : state(carrying or not), distance from closest ghost, number of ghosts in range,
-        distance from closest ennemy, number of enemy in range
-
-        TODO: rajouter la direction ou coordonnées du closest ghost
+        For now we don't need to know anything from enemies
 
         :return: the space
         """
@@ -326,8 +326,8 @@ class BusterEnv(gym.Env):
         obs_high = [self.ghost_number, self.ghost_number]
         for i in range(self.buster_number):
             obs_low += [0.0, 0.0, 0.0, 0.0, 0.0]
-            obs_high += [1.0, Constants.MAP_MAX_DISTANCE, self.ghost_number, Constants.MAP_MAX_DISTANCE,
-                         self.buster_number]
+            obs_high += [1.0, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE,
+                         Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE]
 
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
@@ -376,9 +376,8 @@ class BusterEnv(gym.Env):
 
     def _make_observation(self):
         """
-                 Compute the observation from the new state
-                 :return: an array with observations
-
+        Compute the observation from the new state
+        :return: an array with observations
         """
         print("Making observation")
         observation = np.zeros(self.observation_space.shape)
@@ -386,20 +385,19 @@ class BusterEnv(gym.Env):
         observation[1] = self.state['scoreteam1']
         for i in range(self.buster_number):
             # state (carrying or not)
-            observation[i * 5 + 2] = self.state['team0'][i].state
-            # distance from closest ghost observable
-            _, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
-            observation[i * 5 + 3] = dist
-            # number of ghost in range
-            observation[i * 5 + 4] = self.state['team0'][i].get_number_entities_in_range(
-                self.state['ghostvisibleteam0'])
-            # distance from closest ennemy
-            _, dist = self.state['team0'][i].get_closest(self.state['ennemyvisibleteam0'])
-            observation[i * 5 + 5] = dist
-            # number of ennemy in range
-            observation[i * 5 + 6] = self.state['team0'][i].get_number_entities_in_range(
-                self.state['ennemyvisibleteam0'])
-
+            observation[i * 6 + 2] = self.state['team0'][i].state
+            # coordinates of closest ghost visible
+            ghost0, dist0 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 0)
+            ghost1, dist1 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 1)
+            ghost2, dist2 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 2)
+            
+            observation[i * 6 + 3] = ghost0.x if ghost0 else Constants.MAP_MAX_DISTANCE
+            observation[i * 6 + 4] = ghost0.y if ghost0 else Constants.MAP_MAX_DISTANCE
+            observation[i * 6 + 5] = ghost1.x if ghost1 else Constants.MAP_MAX_DISTANCE
+            observation[i * 6 + 6] = ghost1.y if ghost1 else Constants.MAP_MAX_DISTANCE
+            observation[i * 6 + 7] = ghost2.x if ghost2 else Constants.MAP_MAX_DISTANCE
+            observation[i * 6 + 8] = ghost2.y if ghost2 else Constants.MAP_MAX_DISTANCE
+            
         return observation
 
     def _check_done(self):
