@@ -45,7 +45,6 @@ class Buster(Entity):
         elif self.type == Constants.TYPE_BUSTER_TEAM_1:
             return self.is_in_team_1_base
 
-
     # -------------- END PRIVATE FUNCTIONS AND PROPERTIES ----------------#
     # -------------- CAN PERFORM ACTION FUNCTIONS --------------------#
 
@@ -55,8 +54,11 @@ class Buster(Entity):
         :param ghost: the ghost to bust
         :return: true or false
         """
-        distance = MathUtility.distance(ghost.x, ghost.y, self.x, self.y)
-        return Constants.BUSTER_BUST_MIN_RANGE <= distance <= Constants.BUSTER_BUST_MAX_RANGE
+        if ghost:
+            distance = MathUtility.distance(ghost.x, ghost.y, self.x, self.y)
+            return Constants.BUSTER_BUST_MIN_RANGE <= distance <= Constants.BUSTER_BUST_MAX_RANGE
+
+        return False
 
     # -------------- END CAN PERFORM ACTION FUNCTIONS ----------------#
 
@@ -149,7 +151,7 @@ class Buster(Entity):
         print("Buster team {} with id {} captured ghost id : {}".format(self.type, self.id, self.value))
 
     # -------------- END ACTION FUNCTIONS ----------------#
-    
+
     def __str__(self):
         """
         Display function

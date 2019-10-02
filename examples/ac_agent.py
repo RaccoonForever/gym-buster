@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import sklearn
 import sklearn.preprocessing
 
 import gym_buster.envs.buster_env as env
@@ -41,7 +40,8 @@ class ActorCritic(object):
             sigma = tf.nn.softplus(sigma) + 1e-5
             norm_dist = tf.contrib.distributions.Normal(mu, sigma)
             action_tf_var = tf.squeeze(norm_dist.sample(1), axis=0)
-            action_tf_var = tf.clip_by_value(action_tf_var, -1.0, 1.0)
+            action_tf_var = tf.clip_by_value(action_tf_var, environment.action_space.low[0],
+                                             environment.action_space.high[0])
         return action_tf_var, norm_dist
 
     def scale_state(self, state):
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     scaler = sklearn.preprocessing.StandardScaler()
     scaler.fit(state_space_samples)
 
-    with tf.Session(config=config) as session:
+    with tf.Session() as session:
 
         ac = ActorCritic(environment, session, scaler)
 
@@ -86,19 +86,18 @@ if __name__ == '__main__':
         session.run(tf.global_variables_initializer())
         episodes_history = []
 
-        while episodes < environment.episodes:
+        while episodes < 10000:
             state = environment.reset()
+            environment.render()
 
             reward_total = 0
             done = False
-            steps = 0
 
             while not done:
                 action = session.run(action_tf_var, feed_dict={state_placeholder: ac.scale_state(state)})
 
                 next_state, reward, done, _ = environment.step(np.squeeze(action, axis=0))
 
-                steps += 1
                 reward_total += reward
 
                 V_of_next_state = session.run(value, feed_dict={state_placeholder: ac.scale_state(next_state)})
@@ -122,11 +121,16 @@ if __name__ == '__main__':
 
                 state = next_state
 
+                environment.render()
+
             episodes += 1
             episodes_history.append(reward_total)
-            print("Episode: {}, Number of Steps: {}, Cumulative reward: {}".format(episodes, steps, reward_total))
+            print("Episode: {}, Number of Steps: {}, Cumulative reward: {}".format(episodes, environment.current_step,
+                                                                                   reward_total))
 
-            if np.mean(episodes_history[-100:]) > 90 and len(episodes_history) >= 101:
+            environment.close()
+
+            if episodes // 100 == 0:
                 print("****************Solved***************")
                 print("Mean cumulative reward over 100 episodes:{:0.2f}".format(
                     np.mean(episodes_history[-100:])))

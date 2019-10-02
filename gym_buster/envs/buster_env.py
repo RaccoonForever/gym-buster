@@ -39,6 +39,10 @@ class BusterEnv(gym.Env):
         # Rendering objects
         self.render_entities = []
         self.viewer = rendering.Viewer(Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT)
+        self.screen_width = Constants.PYGAME_WINDOW_WIDTH
+        self.screen_height = Constants.PYGAME_WINDOW_HEIGHT
+        self.map_width = Constants.MAP_WIDTH
+        self.map_heigth = Constants.MAP_HEIGHT
 
         # Game state
         self.score_team0 = 0
@@ -123,6 +127,7 @@ class BusterEnv(gym.Env):
         print("Captured : {}".format(captured))
         print("Alive : {}".format(alive))
 
+        self.state = self._get_state()
         self.previous_observation = self.observation
         self.observation = self._make_observation()
 
@@ -260,11 +265,9 @@ class BusterEnv(gym.Env):
         """
         Function to call to render the state of the game
         """
-        screen_width = Constants.PYGAME_WINDOW_WIDTH
-        screen_height = Constants.PYGAME_WINDOW_HEIGHT
 
-        scale_x = screen_width / Constants.MAP_WIDTH
-        scale_y = screen_height / Constants.MAP_HEIGHT
+        scale_x = self.screen_width / self.map_width
+        scale_y = self.screen_height / self.map_heigth
 
         for ghost in self.ghosts:
             if not ghost.captured and ghost.alive:
@@ -305,7 +308,7 @@ class BusterEnv(gym.Env):
         action_high = []
         for i in range(self.buster_number):
             action_low += [0.0, 0.0, 0.0, 0.0]
-            action_high += [float(Constants.MAP_WIDTH), float(Constants.MAP_HEIGHT), 1.0, 1.0]
+            action_high += [1.0, 1.0, 1.0, 1.0]
 
         return spaces.Box(np.array(action_low), np.array(action_high))
 
@@ -315,8 +318,10 @@ class BusterEnv(gym.Env):
 
         team0 points, team 1 points
         
-        for each buster : state(carrying or not), ghost_inrange1_X, ghost_inrange1_Y, ghost_inrange2_X, ghost_inrange2_Y,
-        ghost_inrange3_X, ghost_inrange3_Y
+        for each buster : state(carrying or not), buster_x, buster_y, ghost_inrange1_X, ghost_inrange1_Y, can_bust_1,
+        ghost_inrange2_X, ghost_inrange2_Y, can_bust_2
+        ghost_inrange3_X, ghost_inrange3_Y, can_bust_3
+        base_X, base_Y
 
         For now we don't need to know anything from enemies
 
@@ -325,9 +330,8 @@ class BusterEnv(gym.Env):
         obs_low = [0.0, 0.0]
         obs_high = [self.ghost_number, self.ghost_number]
         for i in range(self.buster_number):
-            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            obs_high += [1.0, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE,
-                         Constants.MAP_MAX_DISTANCE, Constants.MAP_MAX_DISTANCE]
+            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            obs_high += [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
@@ -385,19 +389,29 @@ class BusterEnv(gym.Env):
         observation[1] = self.state['scoreteam1']
         for i in range(self.buster_number):
             # state (carrying or not)
-            observation[i * 6 + 2] = self.state['team0'][i].state
+            observation[i * 14 + 2] = self.state['team0'][i].state
+
+            # buster position
+            observation[i * 14 + 3] = self.state['team0'][i].x
+            observation[i * 14 + 4] = self.state['team0'][i].y
+
             # coordinates of closest ghost visible
             ghost0, dist0 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 0)
             ghost1, dist1 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 1)
             ghost2, dist2 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 2)
-            
-            observation[i * 6 + 3] = ghost0.x if ghost0 else Constants.MAP_MAX_DISTANCE
-            observation[i * 6 + 4] = ghost0.y if ghost0 else Constants.MAP_MAX_DISTANCE
-            observation[i * 6 + 5] = ghost1.x if ghost1 else Constants.MAP_MAX_DISTANCE
-            observation[i * 6 + 6] = ghost1.y if ghost1 else Constants.MAP_MAX_DISTANCE
-            observation[i * 6 + 7] = ghost2.x if ghost2 else Constants.MAP_MAX_DISTANCE
-            observation[i * 6 + 8] = ghost2.y if ghost2 else Constants.MAP_MAX_DISTANCE
-            
+
+            observation[i * 14 + 5] = ghost0.x / self.map_width if ghost0 else 1.0
+            observation[i * 14 + 6] = ghost0.y / self.map_heigth if ghost0 else 1.0
+            observation[i * 14 + 7] = 1.0 if self.state['team0'][i].can_bust(ghost0) else 0.0
+            observation[i * 14 + 8] = ghost1.x / self.map_width if ghost1 else 1.0
+            observation[i * 14 + 9] = ghost1.y / self.map_heigth if ghost1 else 1.0
+            observation[i * 14 + 10] = 1.0 if self.state['team0'][i].can_bust(ghost1) else 0.0
+            observation[i * 14 + 11] = ghost2.x / self.map_width if ghost2 else 1.0
+            observation[i * 14 + 12] = ghost2.y / self.map_heigth if ghost2 else 1.0
+            observation[i * 14 + 13] = 1.0 if self.state['team0'][i].can_bust(ghost2) else 0.0
+            observation[i * 14 + 14] = 50.0 / self.map_width
+            observation[i * 14 + 15] = 50.0 / self.map_heigth
+
         return observation
 
     def _check_done(self):
@@ -415,21 +429,22 @@ class BusterEnv(gym.Env):
         """
         result = ["" for i in range(self.buster_number)]
         for i in range(self.buster_number):
-            # Privilege to bust then release then move
+            # Privilege to release then bust then move
             if actions[i * 4 + 3] > 0.8:
                 # Release
                 result[i] = "RELEASE"
             elif actions[i * 4 + 2] > 0.8:
                 # Bust the closest ghost
-                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 0) #TODO adapt position
+                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'],
+                                                                 0)  # TODO adapt position
                 if ghost:
                     result[i] = "BUST " + str(ghost.id)
                 else:
+                    print("Buster {} team 0 try busting but nothing happened".format(i))
                     result[i] = "MOVE " + str(self.state['team0'][i].x) + " " + str(self.state['team0'][i].y)
             else:
                 # Move random for now
-                x = random.randint(0, Constants.MAP_WIDTH)
-                y = random.randint(0, Constants.MAP_HEIGHT)
-                result[i] = "MOVE " + str(x) + " " + str(y)
+                x = actions[i * 4] * self.map_width
+                y = actions[i * 4 + 1] * self.map_heigth
+                result[i] = "MOVE " + str(int(x)) + " " + str(int(y))
         return result
-
