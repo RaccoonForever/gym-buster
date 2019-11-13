@@ -30,10 +30,12 @@ if __name__ == '__main__':
 
     while episodes < int(args.max_episodes):
         obs = environment.reset()
+        print("Observable shape" + str(obs.shape))
         done = False
         step = 0
         while not done and step < int(args.max_steps):
             action = agent.act()
+            print("Action shape" + str(action.shape))
             obs, reward, done, info = environment.step(action)
             step += 1
         episodes += 1

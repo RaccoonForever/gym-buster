@@ -1,50 +1,313 @@
-import gym
-from gym import spaces
-import random, logging
+import random
 import numpy as np
-from gym_buster.envs.game_classes.constants import Constants
-from gym_buster.envs.game_classes.game import Game
+import gym
 
-logger = logging.getLogger(__name__)
+from gym import spaces
+from gym.utils import seeding
+from gym.envs.classic_control import rendering
+
+from gym_buster.envs.game_classes.constants import Constants
+from gym_buster.envs.game_classes.buster import Buster
+from gym_buster.envs.game_classes.ghost import Ghost
+from gym_buster.envs.game_classes.entity import Entity
+from gym_buster.envs.game_classes.ai_behaviour import Aibehaviour
+from gym_buster.envs.game_classes.math_utils import MathUtility
 
 
 class BusterEnv(gym.Env):
     """
     Class that will handle a codebuster environment
     """
-    metadata = {'render.modes': ['human', 'console']}
+    metadata = {
+        'render.modes': ['human', 'rgb_array'],
+        'videos.frames_per_second': 30
+    }
 
-    def __init__(self, buster_number, ghost_number, episodes, max_steps, rendering):
-        self.buster_number = int(buster_number)
-        self.ghost_number = int(ghost_number)
-        self.state = None
+    def __init__(self):
+        """
+        Initialize the environment
+        """
+        print("Initializing environment ...")
+        self.ghosts = []
+        self.buster_team0 = []
+        self.buster_team1 = []
+        self.ghost_number = 15
+        self.buster_number = 3
+        self.max_steps = 250
+        self.current_step = 0
+
+        # Rendering objects
+        self.render_entities = []
+        self.viewer = rendering.Viewer(Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT)
+        self.screen_width = Constants.PYGAME_WINDOW_WIDTH
+        self.screen_height = Constants.PYGAME_WINDOW_HEIGHT
+        self.map_width = Constants.MAP_WIDTH
+        self.map_heigth = Constants.MAP_HEIGHT
+
+        # Game state
+        self.score_team0 = 0
+        self.score_team1 = 0
         self.observation = None
         self.previous_observation = None
+        self.state = None
+        self.game_over = False
 
-        self.action_space = self._action_space()
+        # Observation and action space
         self.observation_space = self._observation_space()
+        self.action_space = self._action_space()
 
-        self.episodes = int(episodes)  # Number of games to do
-        self.max_episodes_steps = int(max_steps)  # Number of max steps in a game
-        self.episode_step = 0
-        self.episodes_win = 0
-        
-        self.render = rendering
+        self.seed()
 
-        self.game = Game('human', self.ghost_number, self.buster_number, self.max_episodes_steps)
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+
+    def reset(self):
+        """
+        Function to call to reset environment to a new game
+        """
+        print("Resetting environment...")
+        self.ghosts = []
+        Ghost.reset_ghost()
+        self.buster_team0 = []
+        self.buster_team1 = []
+        self.current_step = 0
+
+        self.score_team0 = 0
+        self.score_team1 = 0
+
+        self.game_over = False
+
+        # Create busters both team
+        for i in range(self.buster_number):
+            self.buster_team0.append(Buster(Constants.TYPE_BUSTER_TEAM_0, i))
+            self.buster_team1.append(Buster(Constants.TYPE_BUSTER_TEAM_1, i))
+
+        # Create ghosts
+        for i in range(self.ghost_number):
+            self.ghosts.append(Ghost(i))
+
+        # Init rendering images for each entity
+        self._init_rendering_entities()
+
+        self.state = self._get_state()
+        self.previous_observation = self._make_observation()
+        self.observation = self.previous_observation
+
+        return self.observation
+
+    def step(self, action):
+        """
+        Function to call to move forward one step in the environment
+        """
+        self.current_step += 1
+        print("--------- STEP {} -----------".format(self.current_step))
+        print("Action : {}".format(action))
+
+        # Convert commands given by NN or sampling on action space
+        commands = self._transform_action(action)
+        self._run_step(commands, None)
+
+        # Check if the game is over
+        if len(self.ghosts) == 0:
+            self.game_over = True
+
+        print("Score team 0 : {}".format(self.score_team0))
+        print("Score team 1 : {}".format(self.score_team1))
+
+        # Check alive and captured ghosts
+        captured = 0
+        alive = 0
+        for ghost in self.ghosts:
+            if ghost.captured:
+                captured += 1
+            if ghost.alive:
+                alive += 1
+
+        print("Captured : {}".format(captured))
+        print("Alive : {}".format(alive))
+
+        self.state = self._get_state()
+        self.previous_observation = self.observation
+        self.observation = self._make_observation()
+
+        print("New observation : {}".format(self.observation))
+
+        return self.observation, self._compute_reward(), self._check_done() or alive == 0, {}
+
+    def _run_step(self, commands_0, commands_1):
+        """
+        Function called by step(...) with both commands for each team
+        If commands_1 is null then it will use a simple AI (class Aibehaviour)
+        """
+        if commands_1:
+            commands_team_1 = commands_1
+        else:
+            commands_team_1 = Aibehaviour.next_command(self.buster_team1, self.ghosts)
+        commands_team_0 = commands_0
+
+        # Apply action for each buster and save new state in a variable to resolve everything at the end
+        for i in range(self.buster_number):
+            buster_team0 = self.buster_team0[i]
+            buster_team1 = self.buster_team1[i]
+
+            command_0 = commands_team_0[i]
+            command_1 = commands_team_1[i]
+
+            self.score_team0 += buster_team0.buster_command(command_0)
+            self.score_team1 += buster_team1.buster_command(command_1)
+
+        # Resolve states conflicting Buster that bust same ghost
+        for ghost in self.ghosts:
+            if ghost.value != Constants.VALUE_GHOST_BASIC and ghost.alive:
+                # Retrieve all busters that tried to bust this ghost
+                buster_team_0_busting_this_ghost = []
+                buster_team_1_busting_this_ghost = []
+                for buster in self.buster_team0:
+                    if buster.value == ghost.id:
+                        buster_team_0_busting_this_ghost.append(buster)
+                for buster in self.buster_team1:
+                    if buster.value == ghost.id:
+                        buster_team_1_busting_this_ghost.append(buster)
+
+                # Check number of each team ghost
+                # 1. If same number of buster for each team are busting a ghost then the busing is cancelled for the ghost
+                # and the busters
+                # 2. If different number of buster busting the ghost. The team with most buster win the ghost and it is
+                # captured by the buster of the wnning team the closest. Only the buster with the captured ghost is in a
+                # state carrying with the ghost id as value. The ghost take the position of the buster
+                if len(buster_team_0_busting_this_ghost) == len(buster_team_1_busting_this_ghost) and len(
+                        buster_team_1_busting_this_ghost) > 0:
+                    ghost.busting_cancelled()
+                    for buster in buster_team_0_busting_this_ghost + buster_team_1_busting_this_ghost:
+                        buster.cancelling_bust()
+                elif len(buster_team_0_busting_this_ghost) != len(buster_team_1_busting_this_ghost):
+                    # Find closest buster in team with most buster
+                    if len(buster_team_0_busting_this_ghost) > len(buster_team_1_busting_this_ghost):
+                        closest = buster_team_0_busting_this_ghost[0]
+                        winner_busters = buster_team_0_busting_this_ghost
+                    else:
+                        closest = buster_team_1_busting_this_ghost[0]
+                        winner_busters = buster_team_1_busting_this_ghost
+
+                    dist = MathUtility.distance(ghost.x, ghost.y, closest.x, closest.y)
+                    for buster in winner_busters:
+                        new_dist = MathUtility.distance(ghost.x, ghost.y, buster.x, buster.y)
+                        if new_dist < dist:
+                            dist = new_dist
+                            closest = buster
+
+                    # Reset all busters with this ghost id except closest
+                    if closest and len(buster_team_0_busting_this_ghost) + len(buster_team_1_busting_this_ghost) >= 1:
+                        if closest.action == Constants.ACTION_BUSTING:
+                            ghost.being_captured(closest)
+                            closest.capturing_ghost()
+                            if closest.type == Constants.TYPE_BUSTER_TEAM_0:
+                                self.score_team0 += 1
+                            elif closest.type == Constants.TYPE_BUSTER_TEAM_1:
+                                self.score_team1 += 1
+                        else:
+                            ghost.updating_position(closest)
+
+                        for buster in buster_team_0_busting_this_ghost + buster_team_1_busting_this_ghost:
+                            if buster != closest:
+                                buster.cancelling_bust()
+
+        # make ghost run away for those who are not being busted
+        for ghost in self.ghosts:
+            if not ghost.captured and ghost.alive:
+                ghost.run_away(self.buster_team0 + self.buster_team1)
+
+        # Compute score
+        for ghost in self.ghosts:
+            if ghost.is_in_team_0_base and not ghost.captured and ghost.alive:
+                self.score_team0 += 1
+                ghost.kill()
+            elif ghost.is_in_team_1_base and not ghost.captured and ghost.alive:
+                self.score_team1 += 1
+                ghost.kill()
+
+    def _init_rendering_entities(self):
+        """
+        Function to be called to init rendering entities and initialize the viewer
+        """
+        if self.viewer is None:
+            self.viewer = rendering.Viewer(Constants.PYGAME_WINDOW_WIDTH, Constants.PYGAME_WINDOW_HEIGHT)
+
+        for ghost in self.ghosts:
+            g = rendering.make_circle(Constants.PYGAME_GHOST_RADIUS)
+            g.set_color(0, 0, 255)
+            g_trans = rendering.Transform()
+            g.add_attr(g_trans)
+            ghost.render_img = g
+            ghost.render_trans = g_trans
+            self.viewer.add_geom(g)
+
+        for buster in self.buster_team0:
+            b = rendering.make_circle(Constants.PYGAME_BUSTER_RADIUS)
+            b.set_color(255, 0, 0)
+            b_trans = rendering.Transform()
+            b.add_attr(b_trans)
+            buster.render_img = b
+            buster.render_trans = b_trans
+            self.viewer.add_geom(b)
+
+        for buster in self.buster_team1:
+            b = rendering.make_circle(Constants.PYGAME_BUSTER_RADIUS)
+            b.set_color(0, 255, 0)
+            b_trans = rendering.Transform()
+            b.add_attr(b_trans)
+            buster.render_img = b
+            buster.render_trans = b_trans
+            self.viewer.add_geom(b)
+
+    def render(self, mode='human'):
+        """
+        Function to call to render the state of the game
+        """
+
+        scale_x = self.screen_width / self.map_width
+        scale_y = self.screen_height / self.map_heigth
+
+        for ghost in self.ghosts:
+            if not ghost.captured and ghost.alive:
+                ghost.render_img.set_color(0, 0, 255)
+                ghost.render_trans.set_translation(ghost.x * scale_x, ghost.y * scale_y)
+            else:
+                ghost.render_img.set_color(255, 255, 255)
+
+        for entity in self.buster_team0 + self.buster_team1:
+            if entity.state == Constants.STATE_BUSTER_CARRYING:
+                entity.render_img.set_color(255, 255, 0)
+            else:
+                if entity.type == Constants.TYPE_BUSTER_TEAM_0:
+                    entity.render_img.set_color(255, 0, 0)
+                elif entity.type == Constants.TYPE_BUSTER_TEAM_1:
+                    entity.render_img.set_color(0, 255, 0)
+            entity.render_trans.set_translation(entity.x * scale_x, entity.y * scale_y)
+
+        return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+
+    def close(self):
+        """
+        Function to call to end the episode before resetting the environment
+        """
+        if self.viewer:
+            self.viewer.close()
+            self.viewer = None
 
     def _action_space(self):
         """
         Action space for gym env
 
-        For each buster : move_degree, move_distance, or bust or release
+        For each buster : move_X, move_Y, or bust or release
 
         :return: the space
         """
         action_low = []
         action_high = []
         for i in range(self.buster_number):
-            action_low += [-1.0, -1.0, 0.0, 0.0]
+            action_low += [0.0, 0.0, 0.0, 0.0]
             action_high += [1.0, 1.0, 1.0, 1.0]
 
         return spaces.Box(np.array(action_low), np.array(action_high))
@@ -54,18 +317,21 @@ class BusterEnv(gym.Env):
         observation space for gym env
 
         team0 points, team 1 points
+        
+        for each buster : state(carrying or not), buster_x, buster_y, ghost_inrange1_X, ghost_inrange1_Y, can_bust_1,
+        ghost_inrange2_X, ghost_inrange2_Y, can_bust_2
+        ghost_inrange3_X, ghost_inrange3_Y, can_bust_3
+        base_X, base_Y
 
-        for each buster : state(carrying or not), distance from closest ghost, number of ghosts in range,
-        distance from closest ennemy, number of enemy in range
+        For now we don't need to know anything from enemies
 
         :return: the space
         """
         obs_low = [0.0, 0.0]
         obs_high = [self.ghost_number, self.ghost_number]
         for i in range(self.buster_number):
-            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0]
-            obs_high += [1.0, Constants.MAP_MAX_DISTANCE, self.ghost_number, Constants.MAP_MAX_DISTANCE,
-                         self.buster_number]
+            obs_low += [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            obs_high += [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
         return spaces.Box(np.array(obs_low), np.array(obs_high))
 
@@ -77,10 +343,10 @@ class BusterEnv(gym.Env):
         # For now easy things
 
         # Battle over and won
-        if self.state['battle_won']:
+        if self.score_team0 > self.score_team1:
             return 4000
         # Battle over and lost
-        if self.state['battle_ended'] and not self.state['battle_won']:
+        if self.game_over and self.score_team1 > self.score_team0:
             return -4000
         # point + 1
         if self.observation[0] > self.previous_observation[0]:
@@ -91,54 +357,69 @@ class BusterEnv(gym.Env):
 
         return 0
 
+    def _get_state(self):
+        """
+        Function that will return the state of the game
+        :return: a dictionnary with the game state
+        """
+        state = {}
+
+        state['scoreteam0'] = self.score_team0
+        state['scoreteam1'] = self.score_team1
+        state['game_over'] = self.game_over
+        state['ghosts'] = self.ghosts
+        state['team0'] = self.buster_team0
+        state['team1'] = self.buster_team1
+
+        state['ghostvisibleteam0'] = Entity.get_entities_visible(self.buster_team0, self.ghosts)
+        state['ghostvisibleteam1'] = Entity.get_entities_visible(self.buster_team1, self.ghosts)
+        state['ennemyvisibleteam0'] = Entity.get_entities_visible(self.buster_team0, self.buster_team1)
+        state['ennemyvisibleteam1'] = Entity.get_entities_visible(self.buster_team1, self.buster_team0)
+
+        return state
+
+    def _make_observation(self):
+        """
+        Compute the observation from the new state
+        :return: an array with observations
+        """
+        print("Making observation")
+        observation = np.zeros(self.observation_space.shape)
+        observation[0] = self.state['scoreteam0']
+        observation[1] = self.state['scoreteam1']
+        for i in range(self.buster_number):
+            # state (carrying or not)
+            observation[i * 14 + 2] = self.state['team0'][i].state
+
+            # buster position
+            observation[i * 14 + 3] = self.state['team0'][i].x
+            observation[i * 14 + 4] = self.state['team0'][i].y
+
+            # coordinates of closest ghost visible
+            ghost0, dist0 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 0)
+            ghost1, dist1 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 1)
+            ghost2, dist2 = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'], 2)
+
+            observation[i * 14 + 5] = ghost0.x / self.map_width if ghost0 else 1.0
+            observation[i * 14 + 6] = ghost0.y / self.map_heigth if ghost0 else 1.0
+            observation[i * 14 + 7] = 1.0 if self.state['team0'][i].can_bust(ghost0) else 0.0
+            observation[i * 14 + 8] = ghost1.x / self.map_width if ghost1 else 1.0
+            observation[i * 14 + 9] = ghost1.y / self.map_heigth if ghost1 else 1.0
+            observation[i * 14 + 10] = 1.0 if self.state['team0'][i].can_bust(ghost1) else 0.0
+            observation[i * 14 + 11] = ghost2.x / self.map_width if ghost2 else 1.0
+            observation[i * 14 + 12] = ghost2.y / self.map_heigth if ghost2 else 1.0
+            observation[i * 14 + 13] = 1.0 if self.state['team0'][i].can_bust(ghost2) else 0.0
+            observation[i * 14 + 14] = 50.0 / self.map_width
+            observation[i * 14 + 15] = 50.0 / self.map_heigth
+
+        return observation
+
     def _check_done(self):
         """
         Function that will say if a game is over
         :return: boolean
         """
-        return self.state['battle_ended'] or self.episode_step > self.max_episodes_steps
-
-    def _get_info(self):
-        """
-        Function that will give some info for debugging
-        :return: dictionnary with information
-        """
-        return {}  # TODO implement info
-
-    def step(self, action):
-        self.episode_step += 1
-
-        # Run a step in the game
-        actions = self._transform_action(action)
-        self.game.run_step(actions, self.render)
-
-        self.state = self.game.get_state()
-        self.previous_observation = self.observation
-        self.observation = self._make_observation()
-        reward = self._compute_reward()
-        done = self._check_done()
-        info = self._get_info()
-
-        return self.observation, reward, done, info
-
-    def reset(self):
-
-        if self.episode_step >= self.max_episodes_steps:
-            # End it and start a new game
-            self.game.exit()
-            self.game = Game('human', self.ghost_number, self.buster_number, self.max_episodes_steps)
-
-        self.episodes += 1
-        self.episode_step = 0
-
-        self.state = self.game.get_state()
-        self.observation = self._make_observation()
-        self.previous_observation = self.observation
-
-        return self.observation
-
-    def render(self, mode='human', close=False):
-        pass
+        return self.game_over or self.current_step > self.max_steps
 
     def _transform_action(self, actions):
         """
@@ -148,51 +429,22 @@ class BusterEnv(gym.Env):
         """
         result = ["" for i in range(self.buster_number)]
         for i in range(self.buster_number):
-            # Privilege to bust then release then move
+            # Privilege to release then bust then move
             if actions[i * 4 + 3] > 0.8:
                 # Release
                 result[i] = "RELEASE"
             elif actions[i * 4 + 2] > 0.8:
                 # Bust the closest ghost
-                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
+                ghost, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'],
+                                                                 0)  # TODO adapt position
                 if ghost:
                     result[i] = "BUST " + str(ghost.id)
                 else:
+                    print("Buster {} team 0 try busting but nothing happened".format(i))
                     result[i] = "MOVE " + str(self.state['team0'][i].x) + " " + str(self.state['team0'][i].y)
             else:
                 # Move random for now
-                x = random.randint(0, Constants.MAP_WIDTH)
-                y = random.randint(0, Constants.MAP_HEIGHT)
-                result[i] = "MOVE " + str(x) + " " + str(y)
+                x = actions[i * 4] * self.map_width
+                y = actions[i * 4 + 1] * self.map_heigth
+                result[i] = "MOVE " + str(int(x)) + " " + str(int(y))
         return result
-
-    def _make_observation(self):
-        """
-        Compute the observation from the new state
-        :return: an array with observations
-        """
-        observation = np.zeros(self.observation_space.shape)
-        observation[0] = self.state['scoreteam0']
-        observation[1] = self.state['scoreteam1']
-        for i in range(self.buster_number):
-            # state (carrying or not)
-            observation[i * 5 + 2] = self.state['team0'][i].state
-            # distance from closest ghost observable
-            _, dist = self.state['team0'][i].get_closest(self.state['ghostvisibleteam0'])
-            observation[i * 5 + 3] = dist
-            # number of ghost in range
-            observation[i * 5 + 4] = self.state['team0'][i].get_number_entities_in_range(
-                self.state['ghostvisibleteam0'])
-            # distance from closest ennemy
-            _, dist = self.state['team0'][i].get_closest(self.state['ennemyvisibleteam0'])
-            observation[i * 5 + 5] = dist
-            # number of ennemy in range
-            observation[i * 5 + 6] = self.state['team0'][i].get_number_entities_in_range(
-                self.state['ennemyvisibleteam0'])
-
-        return observation
-
-
-if __name__ == '__main__':
-    game = Game('human', Constants.GHOST_NUMBER, Constants.BUSTER_NUMBER_PER_TEAM, Constants.GAME_ROUND_NUMBER)
-    game.loop()

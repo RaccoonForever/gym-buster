@@ -1,47 +1,45 @@
 import random
-import copy
-import pygame
-
 from gym_buster.envs.game_classes.entity import Entity
 from gym_buster.envs.game_classes.constants import Constants
 from gym_buster.envs.game_classes.math_utils import MathUtility
-from gym_buster.envs.game_classes.render.entity_sprite import EntitySprite
 
 
-class Ghost(Entity, EntitySprite):
+class Ghost(Entity):
     """
     Class that will handle the ghost entity
     """
 
-    ghost_id = 1
+    # Class variable to keep trace of all ghosts for performance
     ghosts = []
 
-    def __init__(self):
+    # ------------- PRIVATE AND PROPERTY FUNCTIONS -------------#
+    def __init__(self, id):
         """
         Constructor
         """
         super(Ghost, self).__init__(Constants.TYPE_GHOST)
         self.value = Constants.VALUE_GHOST_BASIC
 
-        self._create_image(Constants.PYGAME_GHOST_COLOR)
-
-        self.id = self._generate_id()
-        self._add_ghost(self)
+        self.id = id
         self._generate_random_ghost_position()
         self.alive = True
         self.captured = False
+        self._add_ghost(self)
+    
+    def _generate_random_ghost_position(self):
+        """
+        Function that generate a random position for the ghost
+        """
+        generated = False
+        while not generated:
+            self.x = random.randint(0, Constants.MAP_WIDTH)
+            self.y = random.randint(0, Constants.MAP_HEIGHT)
+            if not (self.is_in_team_0_base or self.is_in_team_1_base):
+                generated = True
 
+    # ------------- PRIVATE AND PROPERTY FUNCTIONS -------------#
+     
     # -------------- CLASS METHODS ---------------- #
-
-    @classmethod
-    def _generate_id(cls):
-        """
-        Generate ghosts id
-        :return: the ghost id
-        """
-        ids = copy.copy(cls.ghost_id)
-        cls.ghost_id += 1
-        return ids
 
     @classmethod
     def _add_ghost(cls, obj):
@@ -52,20 +50,11 @@ class Ghost(Entity, EntitySprite):
         cls.ghosts.append(obj)
 
     @classmethod
-    def _remove_ghost(cls, obj):
-        """
-        Remove the ghost from the class list
-        :param obj: the ghost to remove
-        """
-        cls.ghosts.remove(obj)
-
-    @classmethod
-    def _reset_ghost(cls):
+    def reset_ghost(cls):
         """
         Reset the class list
         """
         cls.ghosts = []
-        cls.ghost_id = 1
 
     @classmethod
     def get_ghost(cls, ids):
@@ -80,63 +69,6 @@ class Ghost(Entity, EntitySprite):
         return None
 
     # -------------- END CLASS METHODS ---------------- #
-
-    # ------------- RENDERING FUNCTIONS -------------------#
-
-    def _create_image(self, color):
-        """
-        Create the first image of the ghost
-        :param color: the color of the ghost
-        """
-        image = pygame.Surface((Constants.PYGAME_GHOST_RADIUS * 2, Constants.PYGAME_GHOST_RADIUS * 2)).convert_alpha()
-        image.fill((0, 0, 0, 0))
-        pygame.draw.circle(image, color,
-                           (round(Constants.PYGAME_GHOST_RADIUS), round(Constants.PYGAME_GHOST_RADIUS)),
-                           Constants.PYGAME_GHOST_RADIUS)
-        self.image = image
-
-    def convert_position_to_pygame(self):
-        """
-        Function that will convert x,y position of the entity to pygame pixel
-        :return: a tuple of converted coordinates
-        """
-        return (round(self.x * Constants.PYGAME_RATIO_WIDTH - Constants.PYGAME_GHOST_RADIUS),
-                round(self.y * Constants.PYGAME_RATIO_HEIGHT - Constants.PYGAME_GHOST_RADIUS))
-
-    def draw(self, surface):
-        """
-        Draw the buster on the surface
-        :param surface: the surface where to render the buster image
-        """
-        if not self.alive or self.captured:
-            self.image = pygame.Surface((1, 1)).convert_alpha()
-            self.image.fill((0, 0, 0, 0))
-        else:
-            self.image = pygame.Surface(
-                (Constants.PYGAME_GHOST_RADIUS * 2, Constants.PYGAME_GHOST_RADIUS * 2)).convert_alpha()
-            self.image.fill((0, 0, 0, 0))
-            pygame.draw.circle(self.image, Constants.PYGAME_GHOST_COLOR,
-                               (round(Constants.PYGAME_GHOST_RADIUS), round(Constants.PYGAME_GHOST_RADIUS)),
-                               Constants.PYGAME_GHOST_RADIUS)
-
-        surface.blit(self.image, self.convert_position_to_pygame())
-
-    # -------------- END RENDERING FUNCTIONS ----------------#
-
-    # -------------- PRIVATE FUNCTIONS ----------------#
-
-    def _generate_random_ghost_position(self):
-        """
-        Function that generate a random position for the ghost
-        """
-        generated = False
-        while not generated:
-            self.x = random.randint(0, Constants.MAP_WIDTH)
-            self.y = random.randint(0, Constants.MAP_HEIGHT)
-            if not (self.is_in_team_0_base or self.is_in_team_1_base):
-                generated = True
-
-    # -------------- END PRIVATE FUNCTIONS ----------------#
 
     # -------------- UPDATING ATTRIBUTES FUNCTIONS ----------------#
     def run_away(self, busters):
@@ -157,6 +89,7 @@ class Ghost(Entity, EntitySprite):
                 closest.append(buster)
 
         # For now run away from the first but we will need to compute the run away from multiple busters same distance
+        # TODO handle barycenter
         if closest:
             new_x, new_y = MathUtility.opposite_direction(self.x, self.y, closest[0].x, closest[0].y,
                                                           Constants.GHOST_RUN_WAY)
@@ -168,8 +101,7 @@ class Ghost(Entity, EntitySprite):
         Function that will change the state of the ghost when captured
         :param buster: the buster that captured him
         """
-        self.x = buster.x
-        self.y = buster.y
+        self.updating_position(buster)
         self.captured = True
         self.value = 1
 
@@ -178,7 +110,6 @@ class Ghost(Entity, EntitySprite):
         Function that will handle the kill of the ghost
         """
         self.alive = False
-        self._remove_ghost(self)
 
     def being_released(self, buster):
         """
@@ -188,6 +119,14 @@ class Ghost(Entity, EntitySprite):
         self.captured = False
         self.updating_position(buster)
         self.angle = buster.angle
+        self.value = Constants.VALUE_GHOST_BASIC
+
+    def busting_cancelled(self):
+        """
+        Function to call when same numbers of busters in each team tried to catch this ghost
+        """
+        print("Ghost {} cancelling busting".format(self.id))
+        self.captured = False
         self.value = Constants.VALUE_GHOST_BASIC
 
     def updating_position(self, buster):

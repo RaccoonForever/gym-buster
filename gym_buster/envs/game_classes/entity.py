@@ -1,6 +1,5 @@
 import random
 from math import cos, sin, atan2, degrees, radians
-
 from gym_buster.envs.game_classes.math_utils import MathUtility
 from gym_buster.envs.game_classes.constants import Constants
 
@@ -10,6 +9,7 @@ class Entity:
     Class that will handle any entity
     """
 
+    # ---------------- PRIVATE FUNCTIONS AND PROPERTY ------------#
     def __init__(self, type_entity):
         """
         Constructor
@@ -23,6 +23,8 @@ class Entity:
         self.direction = 0
         self.size = 10
         self.state = Constants.STATE_BUSTER_NOTHING
+        self.render_img = None
+        self.render_trans = None
 
     @property
     def is_in_team_0_base(self):
@@ -56,6 +58,9 @@ class Entity:
             return MathUtility.limit_coordinates(int(self.x + Constants.BUSTER_MAX_MOVE * cos(
                 radians(self.angle))), self.y - int(Constants.BUSTER_MAX_MOVE * sin(radians(self.angle))))
 
+    # ---------------- END PRIVATE FUNCTIONS AND PROPERTY ------------#
+    
+    # ---------------- ACTION FUNCTIONS -------------- #
     def move(self, x, y):
         """
         Function that move the entity to its new position
@@ -66,20 +71,42 @@ class Entity:
         self.x = x_max
         self.y = y_max
 
-    def get_closest(self, entities):
+    # --------------- END ACTION FUNCTIONS ------------- #
+    
+    # --------------- UTIL FUNCTIONS FOR ENTITIES --------#
+    def get_closest(self, entities, position):
         """
         Function that gives the closest ghost of the buster from the ghosts list in his vision or of its friends
         :param entities: entities list
+        :param position: the position of the closest to return
         :return: an entity and the distance
         """
-        dist = Constants.MAP_MAX_DISTANCE
-        closest = None
+        dist0 = Constants.MAP_MAX_DISTANCE
+        closest0 = None
         for entity in entities:
-            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist:
-                closest = entity
-                dist = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist0:
+                closest0 = entity
+                dist0 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
 
-        return closest, dist
+        closest1 = None
+        dist1 = Constants.MAP_MAX_DISTANCE
+        for entity in entities:
+            if MathUtility.distance(self.x, self.y, entity.x, entity.y) < dist1 and entity != closest0:
+                closest1 = entity
+                dist1 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+
+        closest2 = None
+        dist2 = Constants.MAP_MAX_DISTANCE
+        for entity in entities:
+            if MathUtility.distance(self.x, self.y, entity.x,
+                                    entity.y) < dist2 and entity != closest0 and entity != closest1:
+                closest2 = entity
+                dist2 = MathUtility.distance(self.x, self.y, entity.x, entity.y)
+
+        closest = [closest0, closest1, closest2]
+        dist = [dist0, dist1, dist2]
+
+        return closest[position], dist[position]
 
     def get_number_entities_in_range(self, entities):
         """
@@ -110,3 +137,5 @@ class Entity:
                     result.append(target)
 
         return result
+    
+    # --------------- END UTIL FUNCTIONS FOR ENTITIES --------#
